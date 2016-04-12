@@ -1,0 +1,57 @@
+// Model parameters and helper functions
+var coin_prior     = [0.01, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 0.99];
+var coin_prior_pmf = [1.00, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00];
+var categorical = function(v,p) {return v[discrete(p)];}
+
+// Bias coin model
+var bias_coin_erp = function(sequence) {
+  var bias_coin = function() {
+    var inferred_coin_erp = Enumerate(function() {
+      var coin_p = categorical(coin_prior, coin_prior_pmf);
+      var sequence_factor = sum(map(function(x) {
+                                      return (x == '1') ? Math.log(coin_p) : 
+                                                          Math.log(1-coin_p);}, 
+                                sequence));
+      factor(sequence_factor);
+      return coin_p;
+    });
+
+    var expected_coin_p = expectation(inferred_coin_erp);
+    return flip(expected_coin_p);
+  };
+
+  return Enumerate(bias_coin);
+};
+
+// Markov coin model
+var markov_coin_erp = function(sequence) {
+  var markov_coin = function() {
+    var inferred_coin_erp = Enumerate(function() {
+      var transition_p = categorical(coin_prior, coin_prior_pmf);
+      var sequence_factor = sum(map2(function(x,y) {
+                                       return (x == y) ? Math.log(1-transition_p) : 
+                                                          Math.log(transition_p);}, 
+                                sequence.slice(0,sequence.length-1), 
+                                sequence.slice(1,sequence.length)));
+      factor(sequence_factor);
+      return transition_p;
+    });
+
+    var expected_coin_p = expectation(inferred_coin_erp, 
+                                      function(x) {return (last(sequence) == '1') ? 
+                                                          1-x : x;});
+    return flip(expected_coin_p);
+  };
+
+  return Enumerate(markov_coin);
+};
+
+// Execute the models and compute the information gain
+var expt_list= ['0000', '0001', '0010', '0011', '0100', '0101', '0110', '0111', 
+                '1000', '1001', '1010', '1011', '1100', '1101', '1110', '1111'];
+
+var data = OED({models: [bias_coin_erp, markov_coin_erp], 
+                experiments: expt_list})
+//print(data)
+data
+

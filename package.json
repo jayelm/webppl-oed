@@ -1,0 +1,7 @@
+{
+  "name": "oed",
+  "webppl": {
+    "wppl": ["src/oed.wppl"]
+  },
+  "main": "src/oed.js"  
+}
