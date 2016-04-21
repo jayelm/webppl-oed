@@ -1,5 +1,5 @@
 {
-  "name": "oed",
+  "name": "webppl-oed",
   "webppl": {
     "wppl": ["src/oed.wppl"]
   },
