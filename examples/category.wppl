@@ -1,0 +1,87 @@
+var ms78 = {
+  as: [
+    [1, 1, 1, 0],
+    [1, 0, 1, 0],
+    [1, 0, 1, 1],
+    [1, 1, 0, 1],
+    [0, 1, 1, 1]],
+  bs: [
+    [1, 1, 0, 0],
+    [0, 1, 1, 0],
+    [0, 0, 0, 1],
+    [0, 0, 0, 0]
+  ]
+};
+
+var ln = function(x) {
+  return Math.log(x)
+}
+
+var exp = function(x) {
+  return Math.exp(x)
+}
+
+var arrayEq = function(x,y,_i) {
+  var nx = x.length;
+  var ny = y.length;
+  if (nx !== ny) {
+    return false
+  }
+
+  var loop = function(i) {
+    if (i > nx) {
+      return true
+    } else {
+      return x[i] !== y[i] ? false : loop(i+1)
+    }
+  };
+
+  return loop(0)
+}
+
+var independentCue = function(as, bs, alpha, bias, weights) {
+  var recall = append(as,bs);
+
+  var isRecall = function(obj) {
+    return filter(function(x) { return arrayEq(x,obj) },
+                  recall).length > 0;
+  }
+
+  Enumerate(function() {
+    var object = repeat(4, function() { return flip() ? 1 : 0});
+
+    // a function of dimension index
+    var dimensionalEvidenceForA = function(i) {
+      var matchingObjects = filter(function(x) { return x[i] == object[i] },
+                                   recall);
+      var n = matchingObjects.length;
+      var nA = filter(function(x) { return as.indexOf(x) > -1 },
+                      matchingObjects).length;
+      var nB = n - nA;
+      return weights[i] * (nA - nB)/n;
+    }
+
+    // factor: log-probability that object is an A
+    // prob is 1 / (1 + exp(-alpha * sum_j[w_j * I_j]))
+    // log prob is -log(1 + exp(-alpha * sum_j[w_j * I_j]))
+
+    var totalEvidence = sum(map(dimensionalEvidenceForA,[0,1,2,3])) + (isRecall(object) ? bias : 0);
+
+    // todo: bias
+    var prob = 1 / (1 + exp(-alpha * totalEvidence));
+
+    factor(ln(prob));
+
+    return [object, prob];
+  })
+}
+
+var exemplar = function(weights) {
+
+}
+
+independentCue(ms78.as,
+               ms78.bs,
+               2.7,
+               1,
+               [1.1,2.2,3.3,4.4])
