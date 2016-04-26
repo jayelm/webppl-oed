@@ -12,38 +12,6 @@ var data = function()
 {
     this.data = [];
 
-    this.to_expt_list = function()
-    {
-        var expt_list = [];
-        for (var i = 0; i < this.data.length; i++)
-            expt_list[i] = this.data[i].expt;
-        return expt_list;
-    }
-
-    this.to_optc_list = function()
-    {
-        var optc_list = [];
-        for (var i = 0; i < this.data.length; i++)
-            optc_list[i] = this.data[i].optc;
-        return optc_list;
-    }
-
-    this.to_nprt_list = function()
-    {
-        var nprt_list = [];
-        for (var i = 0; i < this.data.length; i++)
-            nprt_list[i]  = this.data[i].nprt;
-        return nprt_list;
-    }
-
-    this.to_erps_list = function()
-    {
-        var erps_list = [];
-        for (var i = 0; i < this.data.length; i++)
-            erps_list[i]  = this.data[i].erps;
-        return erps_list;
-    }
-
     this.concat = function(new_data)
     {
         for (var i = 0; i < new_data.data.length; i++)
