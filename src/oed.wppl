@@ -6,39 +6,35 @@ var normalize_list = function(list) {
     return map(function(x){return div(x, sum(list));}, list);
 };
 
-var OED = function(oed_params) {
+var OED = function(params) {
     //to do: model input check
-    var oed_models = oed_params.models;
+    var models = params.models;
 
-    var oed_priors = (oed_params.models_prior == undefined) ? make_list(oed_models.length, 1/oed_models.length) :
-                                                              normalize_list(oed_params.models_prior);
+    var priors = (params.models_prior == undefined)
+        ? make_list(models.length, 1/models.length)
+        : normalize_list(params.models_prior);
 
-    var oed_nparts = (oed_params.num_participants == undefined) ? [1] :
-                                                                 oed_params.num_participants;
-    var oed_nparts_samples = (oed_params.num_participants_samples == undefined) ? 2000:
-                                                                                  oed_params.num_participants_samples;
+    var numParticipants = (params.num_participants == undefined)
+        ? [1]
+        : params.num_participants;
+
+    var nparts_samples = (params.num_participants_samples == undefined) ? 2000:
+        params.num_participants_samples;
 
     //to do: experiment input check
-    var oed_expts = oed_params.experiments;
+    var experiments = params.experiments;
 
-    if (oed_nparts.length == 1)
-    {
-        var temp_data = map(function(expt){
-                               var erp_list = map(function(models){models(expt)}, oed_models);
-                               return webpplOed.make_datum(expt, webpplOed.get_expected_kl(erp_list, oed_priors), oed_nparts[0], erp_list)},
-                            oed_expts);
-        var data = webpplOed.make_data(temp_data);
-        return data;
-    }
-    else
-    {
-        var temp_data = mapReduce1(append, function(expt) {
-                                var erp_list = map(function(models){models(expt)}, oed_models);
-                                    map(function(npart){
-                                        return webpplOed.make_datum(expt, webpplOed.get_expected_kl_participants_sample(erp_list, oed_priors, npart, oed_nparts_samples), npart, erp_list)},
-                                    oed_nparts)}, oed_expts);
-        var data = webpplOed.make_data(temp_data);
-        return data;
-    }
+    var temp_data = (numParticipants.length == 1)
+        ? map(function(expt){
+            var erp_list = map(function(models){models(expt)}, models);
+            return webpplOed.make_datum(expt, webpplOed.get_expected_kl(erp_list, priors), numParticipants[0], erp_list)},
+              experiments)
+        : mapReduce1(append, function(expt) {
+            var erp_list = map(function(models){models(expt)}, models);
+            map(function(npart){
+                return webpplOed.make_datum(expt, webpplOed.get_expected_kl_participants_sample(erp_list, priors, npart, nparts_samples), npart, erp_list)},
+                numParticipants)}, experiments);
+
+    var data = webpplOed.make_data(temp_data);
+    return data;
 };
-
