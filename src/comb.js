@@ -16,7 +16,7 @@ var list_swap = function(l, i, j)
     l[j] = temp;
 }
 
-var list_iterative_concat = function(list, crosser) 
+var list_iterative_concat = function(list, crosser)
 {
     var iterations = [];
     for (var i = 0; i < list.length; i++)
@@ -33,7 +33,7 @@ var list_iterative_concat = function(list, crosser)
     return iterations;
 };
 
-var list_product = function(list) 
+var list_product = function(list)
 {
     var products = [[]];
     for (var i = 0; i < list.length; i++)
@@ -44,7 +44,7 @@ var list_product = function(list)
 
 /*
 //Heap's algorithm
-function list_permute(array, list, index) 
+function list_permute(array, list, index)
 {
     if (index == 1)
     {
@@ -60,7 +60,7 @@ function list_permute(array, list, index)
         }
 }
 
-function list_permutations(list, len) 
+function list_permutations(list, len)
 {
     var len = (len == undefined) ? (list.length) : len;
 
@@ -72,7 +72,7 @@ function list_permutations(list, len)
 };
 */
 
-var list_permute_concat = function(list, head, tail, len) 
+var list_permute_concat = function(list, head, tail, len)
 {
     if (head.length == len)
         list.push(head);
@@ -88,7 +88,7 @@ var list_permute_concat = function(list, head, tail, len)
     }
 };
 
-var list_permutations = function(list, len) 
+var list_permutations = function(list, len)
 {
     var len = (len == undefined) ? (list.length) : len;
 
@@ -99,18 +99,17 @@ var list_permutations = function(list, len)
 };
 
 /*
-function list_combinations(array) 
+function list_combinations(array)
 {
 };
 
-function list_combinations_with_replacement(array) 
+function list_combinations_with_replacement(array)
 {
 };
 */
 
-module.exports = 
+module.exports =
 {
-    list_product: list_product, 
+    list_product: list_product,
     list_permutations: list_permutations
 };
-

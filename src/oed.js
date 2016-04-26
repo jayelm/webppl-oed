@@ -5,24 +5,24 @@ var comb = require('./comb.js');
 var print = require('./print.js');
 //var cps = require('./cps_header.js');
 
-// PMF helper functions 
+// PMF helper functions
 
 var normalize = function(x)
 {
     var sum = 0;
-    for (var i = 0; i < x.length; i++) 
+    for (var i = 0; i < x.length; i++)
         sum += x[i];
 
-    if (sum != 0) 
-        for (var i = 0; i < x.length; i++) 
+    if (sum != 0)
+        for (var i = 0; i < x.length; i++)
             x[i] /= sum;
     return x;
 };
 
-var erp_to_pmf = function(erp_list) 
+var erp_to_pmf = function(erp_list)
 {
     var pmf_list = [];
-    for (var i = 0; i < erp_list.length; i++) 
+    for (var i = 0; i < erp_list.length; i++)
     {
         pmf_list[i] = new pmf.pmf();
         pmf_list[i].from_erp(erp_list[i]);
@@ -31,12 +31,12 @@ var erp_to_pmf = function(erp_list)
     return pmf_list;
 };
 
-var homogenize_pmf_list = function(pmf_list) 
+var homogenize_pmf_list = function(pmf_list)
 {
     var hpmf_list = [];
 
     var all_x_list = pmf_list[0].to_x_list();
-    for (var i = 1; i < pmf_list.length; i++) 
+    for (var i = 1; i < pmf_list.length; i++)
     {
         var x_list = pmf_list[i].to_x_list();
         for (var j = 0; j < x_list.length; j++)
@@ -55,16 +55,16 @@ var homogenize_pmf_list = function(pmf_list)
                 all_x_list.push(x_list[j]);
         }
     }
-    
+
     if (typeof(all_x_list[0]) == 'number')
         all_x_list.sort(function(a,b){return a-b;});
     else
         all_x_list.sort();
 
-    for (var i = 0; i < pmf_list.length; i++) 
+    for (var i = 0; i < pmf_list.length; i++)
     {
         hpmf_list[i] = new pmf.pmf();
-        
+
         for (var j = 0; j < all_x_list.length; j++)
         {
             var x_list = pmf_list[i].to_x_list();
@@ -92,14 +92,14 @@ var homogenize_pmf_list = function(pmf_list)
 
 // Expected KL for a set of distributions
 
-var get_expected_kl = function(erp_list, model_belief) 
+var get_expected_kl = function(erp_list, model_belief)
 {
     var model_belief = normalize(model_belief)
     if (erp_list.length != model_belief.length)
         return 'Error: The number of models (' + erp_list.length + ') is not equal to the belief distribution of models(' + model_belief.length + ')'
 
     var pmf_list = homogenize_pmf_list(erp_to_pmf(erp_list));
-    
+
     var expected_kl = 0;
     for (var i = 0; i < pmf_list[0].pmf.length; i++)
     {
@@ -115,12 +115,12 @@ var get_expected_kl = function(erp_list, model_belief)
 
 // Expected KL for a given number of participants
 
-var multinomial_sample = function(array) 
+var multinomial_sample = function(array)
 {
     var x = Math.random();
     var prob_accumulator = 0;
 
-    for (var i = 0; i < array.length; i++) 
+    for (var i = 0; i < array.length; i++)
     {
         prob_accumulator += array[i];
         if (prob_accumulator >= x) {return i;};
@@ -128,7 +128,7 @@ var multinomial_sample = function(array)
     return array.length;
 };
 
-var get_participants_sampler = function(pmf_list, num_participants, num_samples) 
+var get_participants_sampler = function(pmf_list, num_participants, num_samples)
 {
     var sample_counter = [];
     for (var m = 0; m < pmf_list.length; m++)
@@ -145,14 +145,14 @@ var get_participants_sampler = function(pmf_list, num_participants, num_samples)
                 sample_participant[multinomial_sample(p_list)] += 1;
 
             var sps = sample_participant.toString();
-              
-            sample_counter[m][sps] = (sample_counter[m][sps] == undefined) ? 1 : 
+
+            sample_counter[m][sps] = (sample_counter[m][sps] == undefined) ? 1 :
                                      sample_counter[m][sps] + 1;
-            //sample_counter[m][sample_participant] = (sample_counter[m][sample_participant] == undefined) ? 1 : 
+            //sample_counter[m][sample_participant] = (sample_counter[m][sample_participant] == undefined) ? 1 :
             //                                         sample_counter[m][sample_participant] + 1;
         }
     }
-            
+
     return sample_counter;
 };
 
@@ -172,7 +172,7 @@ var get_entropy_of_response_participants_sample = function(pmf_list, model_belie
         for (var m = 0; m < pmf_list.length; m++)
         {
             var sc = sample_counter[m][joint_sample_counter_keys[i]];
-            p_response_sample[i] += (sc == undefined) ? 0 : 
+            p_response_sample[i] += (sc == undefined) ? 0 :
                                     model_belief[m]*sc/num_samples;
         }
     }
@@ -189,7 +189,7 @@ var get_entropy_of_response_participants_sample = function(pmf_list, model_belie
             if (joint_sample_counter_keys.indexOf(sc) == -1)
             {
                 joint_sample_counter_keys.push(sc);
-                p_response_sample[i] += (sc == undefined) ? 0 : 
+                p_response_sample[i] += (sc == undefined) ? 0 :
                                         model_belief[m]*sc/num_samples;
                 i++;
             }
@@ -229,7 +229,7 @@ var get_entropy_of_response_given_models_participants_sample = function(pmf_list
     return h_response_g_model;
 };
 
-var get_expected_kl_participants_sample = function(erp_list, model_belief, num_participants, num_samples) 
+var get_expected_kl_participants_sample = function(erp_list, model_belief, num_participants, num_samples)
 {
     var model_belief = normalize(model_belief)
     if (erp_list.length != model_belief.length)
@@ -241,7 +241,7 @@ var get_expected_kl_participants_sample = function(erp_list, model_belief, num_p
 
     var h_response = get_entropy_of_response_participants_sample(pmf_list, model_belief, sample_counter, num_participants, num_samples);
     var h_response_g_model = get_entropy_of_response_given_models_participants_sample(pmf_list, model_belief, sample_counter, num_participants, num_samples);
-    
+
     return h_response - h_response_g_model;
 };
 
@@ -281,7 +281,7 @@ var find_nearest = function(array, value)
 // Compute
 
 /*
-OED({models: [models…], 
+OED({models: [models…],
      priors: [model priors…], //if omitted then uniform
      experiments: […],
      linkingfn: foo, //if omitted assume identity. how do you indicate it’s parameters and their priors?
@@ -337,7 +337,7 @@ function cps_map(func, baseK, xs, i) {
     return func(xs[i], i, xs, baseK);
   } else {
     console.log("running", i, xs[i], baseK)
-    return cps_map(func, 
+    return cps_map(func,
                    function(s, v) {return [v].concat(func(xs[i], i, xs, baseK));},
                    xs,
                    i-1);
@@ -359,7 +359,7 @@ var cps_exec = function(s, k, a, func, args) {
     return exec;
 };
 
-var compute = function(s, k, a, oed_params) 
+var compute = function(s, k, a, oed_params)
 {
     console.log(oed_params)
     var data = print.data();
@@ -396,7 +396,7 @@ var compute = function(s, k, a, oed_params)
                                 var zz = m(s, kk, a, oed_expts[0])();
                                 console.log("zz", zz);
                                 return zz;},
-                            base_cont, 
+                            base_cont,
                             oed_models));
 
         //return cps_exec(s, k, a, oed_models[0], oed_expts[0]);
@@ -417,8 +417,8 @@ var compute = function(s, k, a, oed_params)
                        var xx = m(s, collectK, a, oed_expts[0]);
                        console.log("xx: ", xx);
                        //xx()
-                       //m(s, collectK, a, oed_expts[0]); nextk();}, 
-                       //nextk();}, 
+                       //m(s, collectK, a, oed_expts[0]); nextk();},
+                       //nextk();},
                        },
                    function(){return collect;}, oed_models);
         console.log("here", collect.map(untrampoline));
@@ -435,7 +435,7 @@ var compute = function(s, k, a, oed_params)
         for (var i = 0; i < oed_params.model.length; i++)
             oed_params.prior[i] = 1/oed_params.model.length;
 
-    if (oed_params.num_participants == undefined) 
+    if (oed_params.num_participants == undefined)
         oed_params.num_participants = [1];
 
     if (oed_params.num_participants.length == 1)
@@ -457,10 +457,10 @@ var compute = function(s, k, a, oed_params)
                 console.log(erp_list[m])
             }
             console.log(erp_list)
-                
+
             data.push(new print.datum(oed_params.experiments[i],
                                       get_expected_kl(erp_list, oed_params.models_prior),
-                                      oed_params.num_participants[0], 
+                                      oed_params.num_participants[0],
                                       erp_list));
         }
     }
@@ -471,11 +471,11 @@ var compute = function(s, k, a, oed_params)
             for (var j = 0; j < oed_params.num_participants.length; j++)
             {
                 data.push(new print.datum(oed_params.experiments[i],
-                                          get_expected_kl_participants_sample(oed_params.models, 
+                                          get_expected_kl_participants_sample(oed_params.models,
                                                                               oed_params.models_prior,
                                                                               oed_params.num_participants[j],
                                                                               oed_params.num_participants_samples),
-                                          oed_params.num_participants[j], 
+                                          oed_params.num_participants[j],
                                           oed_params.models));
             }
         }
@@ -495,24 +495,22 @@ var test = function(s, k, a, x, y) {
 
 //console.log("test")
 
-module.exports = 
+module.exports =
 {
     erp_to_pmf : erp_to_pmf,
     homogenize_pmf_list : homogenize_pmf_list,
     get_expected_kl : get_expected_kl,
     get_expected_kl_participants_sample: get_expected_kl_participants_sample,
-    list_product: comb.list_product, 
-    list_permutations: comb.list_permutations, 
-    find_nearest: find_nearest, 
+    list_product: comb.list_product,
+    list_permutations: comb.list_permutations,
+    find_nearest: find_nearest,
     format: print.format,
     log: print.log,
     make_data: print.make_data,
     make_datum: print.make_datum,
     data: print.data,
-    test: test,
+    test: test
     //compute : compute
 };
 
 //global.OED = compute;
-
-
