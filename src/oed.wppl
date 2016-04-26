@@ -6,6 +6,10 @@ var normalize_list = function(list) {
     return map(function(x){return div(x, sum(list));}, list);
 };
 
+var pam = function(arr,f) {
+    return map(f,arr)
+};
+
 var OED = function(params) {
     //to do: model input check
     var models = params.models;
@@ -25,15 +29,38 @@ var OED = function(params) {
     var experiments = params.experiments;
 
     var temp_data = (numParticipants.length == 1)
-        ? map(function(expt){
-            var erp_list = map(function(models){models(expt)}, models);
-            return webpplOed.make_datum(expt, webpplOed.get_expected_kl(erp_list, priors), numParticipants[0], erp_list)},
-              experiments)
-        : mapReduce1(append, function(expt) {
-            var erp_list = map(function(models){models(expt)}, models);
-            map(function(npart){
-                return webpplOed.make_datum(expt, webpplOed.get_expected_kl_participants_sample(erp_list, priors, npart, nparts_samples), npart, erp_list)},
-                numParticipants)}, experiments);
+        ? pam(
+            experiments,
+            function(expt){
+                var modelPredictions = map(function(models){models(expt)},
+                                           models);
+                var args = {
+                    experiment: expt,
+                    expectedKL: webpplOed.get_expected_kl(modelPredictions, priors),
+                    numParticipants: numParticipants[0],
+                    modelPredictions: modelPredictions
+                };
+
+                return webpplOed.make_datum(args);
+            })
+        : mapReduce1(
+            append,
+            function(expt) {
+                var modelPredictions = map(function(models){models(expt)},
+                                           models);
+                pam(numParticipants,
+                    function(num){
+                        var args = {
+                            experiment: expt,
+                            expectedKL: webpplOed.get_expected_kl_participants_sample(modelPredictions, priors, numParticipants, nparts_samples),
+                            numParticipants: num,
+                            modelPredictions: modelPredictions
+                        };
+
+                        return webpplOed.make_datum(args)
+                    })
+            },
+            experiments);
 
     var data = webpplOed.make_data(temp_data);
     return data;
