@@ -1,11 +1,12 @@
 'use strict';
 
-var datum = function(expt, optc, nprt, erps)
+var _ = require('underscore');
+
+var datum = function(_args)
 {
-    this.expt = expt;
-    this.optc = optc;
-    this.nprt = (nprt == undefined) ? 1 : nprt;
-    this.erps = erps;
+    var args = _.defaults(_args,
+                          {numParticipants: 1});
+    _.extend(this, args);
 };
 
 var data = function()
@@ -19,17 +20,11 @@ var data = function()
     }
 };
 
-var make_datum = function(expt, optc, nprt, erps)
+var make_datum = function(args)
 {
-    return new datum(expt, optc, nprt, erps);
+    return new datum(args);
 };
 
-/*
-var make_data = function()
-{
-    return new data();
-};
-*/
 var make_data = function(list)
 {
     var dd = new data();

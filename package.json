@@ -1,7 +1,12 @@
 {
   "name": "webppl-oed",
   "webppl": {
-    "wppl": ["src/oed.wppl"]
+    "wppl": [
+      "src/oed.wppl"
+    ]
   },
-  "main": "src/oed.js"  
+  "main": "src/oed.js",
+  "dependencies": {
+    "underscore": "^1.8.3"
+  }
 }
