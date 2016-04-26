@@ -77,12 +77,51 @@ var independentCue = function(as, bs, alpha, bias, weights) {
   })
 }
 
-var exemplar = function(weights) {
+var exemplar = function(as, bs, weights) {
+  Enumerate(function() {
+    var object = repeat(4, function() { return flip() ? 1 : 0});
+
+    var similarity = function(x,y) {
+      var dimMatches = map2(function(xi,yi) {
+        return xi == yi
+      },x,y);
+      var probs = map2(function(b,p) {
+        return b ? 1 : p
+      },dimMatches, weights);
+      return product(probs);
+    };
+
+
+    // sum of similarities to a
+    var ssa = sum(map(function(a) { return similarity(object, a) },
+                      as));
+
+    // sum of similarities to b
+    var ssb = sum(map(function(b) { return similarity(object, b) },
+                      bs));
+
+    var prob = ssa / (ssa + ssb);
+
+    return {object: object, prob: prob};
+
+  })
+
 
 }
 
-independentCue(ms78.as,
-               ms78.bs,
-               2.7,
-               1,
-               [1.1,2.2,3.3,4.4])
+// independentCue(ms78.as,
+//                ms78.bs,
+//                2.7,
+//                1,
+//                [1.1,2.2,3.3,4.4])
+
+
+var post = exemplar(ms78.as,
+         ms78.bs,
+         [0.14,0.16,0.18,0.14]
+                   );
+
+var states = post.support();
+var probs = map(function(state) { return state.prob}, states)
+
+console.log(probs.sort().join('\n'))
