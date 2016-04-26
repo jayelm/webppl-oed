@@ -13,7 +13,7 @@ var ms78 = {
   ]
 };
 
-var ln = function(x) {
+var log = function(x) {
   return Math.log(x)
 }
 
@@ -42,8 +42,9 @@ var arrayEq = function(x,y,_i) {
 var independentCue = function(as, bs, alpha, bias, weights) {
   var recall = append(as,bs);
 
-  var isRecall = function(obj) {
-    return filter(function(x) { return arrayEq(x,obj) },
+  // returns true if x is in the training set, false if not
+  var isRecall = function(x) {
+    return filter(function(y) { return arrayEq(x,y) },
                   recall).length > 0;
   }
 
@@ -70,7 +71,7 @@ var independentCue = function(as, bs, alpha, bias, weights) {
     // todo: bias
     var prob = 1 / (1 + exp(-alpha * totalEvidence));
 
-    factor(ln(prob));
+    factor(log(prob));
 
     return [object, prob];
   })
