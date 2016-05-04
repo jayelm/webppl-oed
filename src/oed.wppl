@@ -65,3 +65,112 @@ var OED = function(params) {
     var data = webpplOed.make_data(temp_data);
     return data;
 };
+
+var KL = function(P, Q) {
+    var statesP = P.support();
+    var statesQ = Q.support();
+
+    // TODO: assert that states1 = states2
+
+    return sum(pam(statesP,
+                   function(state) {
+                       var scoreP = P.score(null, state);
+                       var scoreQ = Q.score(null, state);
+
+                       var probP = Math.exp(scoreP);
+
+                       //    P(i) * log[ P(i) / Q(i) ]
+                       // =  P(i) * [log(P(i) - log(Q(i)))]
+                       return probP * (scoreP - scoreQ);
+                   }
+                  ))
+
+}
+
+// compute empirical information gain
+var EIG = function(models, experiment, responses) {
+    var allModelPredictions = pam(models, function(m) { return m(experiment) });
+
+    var modelNames = ['bias','markov'];
+
+    var prior = Enumerate(function() {
+        return uniformDraw(modelNames);
+    });
+
+    var posterior = Enumerate(function() {
+        var whichModel = randomInteger(models.length);
+
+        var modelPredictions = allModelPredictions[whichModel];
+
+        var score = sum(pam(responses,
+                            function(response) {
+                                return modelPredictions.score(null, response)
+                            }
+                           ))
+        factor(score);
+
+        return modelNames[whichModel];
+    })
+
+    return KL(posterior, prior);
+
+}
+
+
+
+var expectedKL = function(experiment, modelNames, modelFunctions, measurements) {
+    var responseDistribution = Enumerate(function() {
+        var modelIndex = uniformDraw([0,1]);
+        var modelName = modelNames[modelIndex];
+        var modelFunction = modelFunctions[modelIndex];
+
+        var modelResponseDist = modelFunction(experiment);
+
+        var measurement = uniformDraw(measurements);
+
+        factor(modelResponseDist.score(null, measurement));
+
+        return measurement;
+    });
+
+    console.log(responseDistribution.support())
+    console.log(responseDistribution.score(null, true))
+    console.log(responseDistribution.score(null, false))
+
+    return MH(function() {
+        return responseDistribution.sample();
+    }, 50)
+
+    // // for each response in response distribution, how much does it update beliefs about models?
+
+    // var prior = Enumerate(function() {
+    //     return uniformDraw(modelNames)
+    // });
+
+    // var modelPredictions = map(function(f) { return f(experiment)},
+    //                            modelFunctions);
+
+
+
+    // var dist = Enumerate(function() {
+    //     var response = responseDistribution.sample();
+
+    //     // var posterior = Enumerate(function() {
+    //     //     var modelIndex = randomInteger(modelNames.length);
+    //     //     var modelName = modelNames[modelIndex];
+    //     //     var modelPrediction = modelPredictions[modelIndex];
+
+    //     //     factor(modelPrediction.score(null, response));
+
+    //     //     return modelName;
+    //     // })
+
+    //     return response;
+
+    // });
+
+    // console.log(dist.support())
+
+    // return dist
+
+}
