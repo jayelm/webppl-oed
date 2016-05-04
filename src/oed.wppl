@@ -116,7 +116,11 @@ var EIG = function(models, experiment, responses) {
 
 }
 
-
+var expectation = function(erp) {
+    sum(pam(erp.support(),
+            function(state) { return Math.exp(erp.score(null, state)) * state }
+           ))
+}
 
 var expectedKL = function(experiment, modelNames, modelFunctions, measurements) {
     var responseDistribution = Enumerate(function() {
@@ -133,44 +137,32 @@ var expectedKL = function(experiment, modelNames, modelFunctions, measurements) 
         return measurement;
     });
 
-    console.log(responseDistribution.support())
-    console.log(responseDistribution.score(null, true))
-    console.log(responseDistribution.score(null, false))
+    // for each response in response distribution, how much does it update beliefs about models?
 
-    return MH(function() {
-        return responseDistribution.sample();
-    }, 50)
+    var prior = Enumerate(function() {
+        return uniformDraw(modelNames)
+    });
 
-    // // for each response in response distribution, how much does it update beliefs about models?
+    var modelPredictions = map(function(f) { return f(experiment)},
+                               modelFunctions);
 
-    // var prior = Enumerate(function() {
-    //     return uniformDraw(modelNames)
-    // });
+    var dist = Enumerate(function() {
+        var response = sample(responseDistribution);
 
-    // var modelPredictions = map(function(f) { return f(experiment)},
-    //                            modelFunctions);
+        var posterior = Enumerate(function() {
+            var modelIndex = randomInteger(modelNames.length);
+            var modelName = modelNames[modelIndex];
+            var modelPrediction = modelPredictions[modelIndex];
 
+            factor(modelPrediction.score(null, response));
 
+            return modelName;
+        })
 
-    // var dist = Enumerate(function() {
-    //     var response = responseDistribution.sample();
+        return KL(posterior, prior);
 
-    //     // var posterior = Enumerate(function() {
-    //     //     var modelIndex = randomInteger(modelNames.length);
-    //     //     var modelName = modelNames[modelIndex];
-    //     //     var modelPrediction = modelPredictions[modelIndex];
+    });
 
-    //     //     factor(modelPrediction.score(null, response));
-
-    //     //     return modelName;
-    //     // })
-
-    //     return response;
-
-    // });
-
-    // console.log(dist.support())
-
-    // return dist
+    return expectation(dist)
 
 }

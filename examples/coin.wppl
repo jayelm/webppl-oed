@@ -46,30 +46,10 @@ var data = OED({models: [biasCoin, markovCoin],
                 num_participants: [20]
                })
 // //print(data)
-//data
+data
 
-// EIG([biasCoin, markovCoin],
-//     [false,true,false,true],
-//     [false,false,false,false]
-//    )
-
-// console.log(expectedKL([false,false,false,false],
+// expectedKL([true,true,false,true],
 //            ['bias','markov'],
 //            [biasCoin, markovCoin],
 //            [true,false] // possible responses
-//                       ).support())
-
-// 'foo'
-
-
-var foo = Enumerate(function() {
-    return uniformDraw(['a','b'])
-});
-
-console.log(foo.support())
-
-var bar = Enumerate(function() {
-    return foo.sample()
-})
-
-console.log(bar.support())
+//           )
