@@ -47,40 +47,47 @@ var AIG = function(mSample, x, y) {
 }
 
 
-var EIG = function(args) {
+var EIG = function(args, _infer) {
     var mSample = args.mSample, xSample = args.xSample, ySample = args.ySample;
     // example: could use MH for M1 but then enumerate for M2
+    var infer = _infer || {},
+        inferX = infer.X || Enumerate,
+        inferY1 = infer.Y1 || Enumerate,
+        inferY2 = infer.Y1 || Enumerate,
+        inferM1 = infer.Y1 || Enumerate,
+        inferM2 = infer.Y1 || Enumerate;
+    var modelFunctions = args.models;
 
-    var mPrior = Enumerate(function() { return mSample().name });
+    var mPrior = Enumerate(function() { mSample() });
 
     Enumerate(function() {
         var x = xSample();
 
-        // according to the prior distribution on models,
-        // how likely is each response?
+        // wrt the prior on models, how likely is each response?
         var yLikelihood = Enumerate(function() {
             var y = ySample();
-            var m = mSample();
-            var mx = m(x);
+            var m = sample(mPrior);
+            var f = modelFunctions[m];
+            var mx = f(x);
             factor(score(mx, y));
             return y;
         });
 
-        // according to the above distribution on responses,
-        // what is the posterior distribution on models?
+        // wrt the above distribution on responses, what is the posterior distribution on models?
         var KLDist = Enumerate(function() {
             var y = sample(yLikelihood);
             var mPosterior = Enumerate(function() {
-                var m = mSample();//sample(fPrior);
-                var mx = m(x);
+                var m = sample(mPrior);
+                var f = modelFunctions[m];
+                var mx = f(x);
                 factor(score(mx, y))
-                return m.name;
+                return m;
             })
 
             return KL(mPosterior, mPrior);
         });
         var eig = expectation(KLDist);
-        factor(Math.exp(eig));
+        factor(eig); // can we convert kl to a probability somehow? e.g., probability of observing the posterior distribution given the prior? is this useful?
         return {x: x, EIG: eig}
     })
 }
