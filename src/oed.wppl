@@ -56,9 +56,18 @@ var EIG = function(args, _infer) {
         inferY2 = infer.Y1 || Enumerate,
         inferM1 = infer.Y1 || Enumerate,
         inferM2 = infer.Y1 || Enumerate;
-    var modelFunctions = args.models;
 
-    var mPrior = Enumerate(function() { mSample() });
+    var mPrior = Enumerate(function() {
+        var m = mSample();
+        // if we just return the function, webppl returns a support with only
+        // one element because it has trouble comparing functions, so
+        // return this object instead
+        // (see https://github.com/probmods/webppl/issues/422)
+        return {
+            name: m.name,
+            func: m
+        }
+    });
 
     inferX(function() {
         var x = xSample();
@@ -67,7 +76,7 @@ var EIG = function(args, _infer) {
         var yLikelihood = inferY1(function() {
             var y = ySample();
             var m = sample(mPrior);
-            var f = modelFunctions[m];
+            var f = m.func;
             var mx = f(x);
             factor(score(mx, y));
             return y;
@@ -78,7 +87,7 @@ var EIG = function(args, _infer) {
             var y = sample(yLikelihood);
             var mPosterior = inferM2(function() {
                 var m = sample(mPrior);
-                var f = modelFunctions[m];
+                var f = m.func;
                 var mx = f(x);
                 factor(score(mx, y))
                 return m;

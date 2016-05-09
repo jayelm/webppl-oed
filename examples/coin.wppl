@@ -41,8 +41,7 @@ var markovCoin = function(sequence) {
 
 // get expected information gain
 // this function signature is kind of ugly but webppl can't handle a distribution on functions
-EIG({models: {'biasCoin': biasCoin, 'markovCoin': markovCoin},
-     mSample: function() { uniformDraw(['biasCoin', 'markovCoin']) },
+EIG({mSample: function() { uniformDraw([biasCoin, markovCoin]) },
      xSample: function() { repeat(4, flip) },
      ySample: function() { flip() }}
    )
