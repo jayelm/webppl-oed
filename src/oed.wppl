@@ -60,11 +60,11 @@ var EIG = function(args, _infer) {
 
     var mPrior = Enumerate(function() { mSample() });
 
-    Enumerate(function() {
+    inferX(function() {
         var x = xSample();
 
         // wrt the prior on models, how likely is each response?
-        var yLikelihood = Enumerate(function() {
+        var yLikelihood = inferY1(function() {
             var y = ySample();
             var m = sample(mPrior);
             var f = modelFunctions[m];
@@ -74,9 +74,9 @@ var EIG = function(args, _infer) {
         });
 
         // wrt the above distribution on responses, what is the posterior distribution on models?
-        var KLDist = Enumerate(function() {
+        var KLDist = inferY2(function() {
             var y = sample(yLikelihood);
-            var mPosterior = Enumerate(function() {
+            var mPosterior = inferM2(function() {
                 var m = sample(mPrior);
                 var f = modelFunctions[m];
                 var mx = f(x);
@@ -91,3 +91,5 @@ var EIG = function(args, _infer) {
         return {x: x, EIG: eig}
     })
 }
+
+var OED = EIG;
