@@ -1,12 +1,10 @@
 // Model parameters and helper functions
-var coin_weights     = [0.01, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 0.99];
-// var coin_prior_pmf = [1.00, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00];
-// var categorical = function(v,p) {return v[discrete(p)];}
+var coinWeights = [0.01, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 0.99];
 
 // Bias coin model
 var biasCoin = function(sequence) {
   Enumerate(function(){
-    var p = uniformDraw(coin_weights);
+    var p = uniformDraw(coinWeights);
     var scr = binomialERP.score([p,sequence.length], sum(sequence))
     factor(scr)
     return flip(p)
@@ -15,41 +13,39 @@ var biasCoin = function(sequence) {
 
 // Markov coin model
 var markovCoin = function(sequence) {
-  Enumerate(function(){
-    var transition_p =  uniformDraw(coin_weights);
-    var scr = sum(map2(function(x,y) {
-      return x ?
-        bernoulliERP.score([1-transition_p], y) :
-        bernoulliERP.score([transition_p], y)
-    }, sequence.slice(0, sequence.length-1),
-      sequence.slice(1, sequence.length))
-    );
+    Enumerate(function(){
+        var transitionProb = uniformDraw(coinWeights);
+        var generateSequence = function(n, flipsSoFar) {
+            if (flipsSoFar.length == n) {
+                return flipsSoFar;
+            } else {
+                var lastFlip = last(flipsSoFar);
+                return generateSequence(n,
+                                        append(flipsSoFar,
+                                               flip(transitionProb) ? !lastFlip : lastFlip))
+            }
+        }
 
-    factor(scr)
+        var firstCoin = flip();
+        var sampled = generateSequence(sequence.length, [firstCoin]);
+        condition(all(idF,
+                      map2(function(x,y) { x == y }, sampled, sequence)))
 
-    return flip(last(sequence) ? 1-transition_p : transition_p)
-  })
+        return flip(transitionProb) ? !last(sampled) : last(sampled);
+    })
 }
 
 
 // Execute the models and compute the information gain
 
-var expt_list = Enumerate(function(){
-  repeat(4, function(){return flip(0.5)})
-}).support()
 
-// var expt_list= ['0000', '0001', '0010', '0011', '0100', '0101', '0110', '0111',
-//                 '1000', '1001', '1010', '1011', '1100', '1101', '1110', '1111'];
 
-var data = OED({models: [biasCoin, markovCoin],
-                experiments: expt_list,
-                num_participants: [20]
-               })
-// //print(data)
-data
 
-// expectedKL([true,true,false,true],
-//            ['bias','markov'],
-//            [biasCoin, markovCoin],
-//            [true,false] // possible responses
-//           )
+EIG({mSample: function() { uniformDraw([biasCoin, markovCoin]) },
+     xSample: function() { repeat(4, flip) },
+     ySample: function() { flip() }}
+   )
+
+// AIG(function() { uniformDraw([biasCoin, markovCoin] )},
+//     [true,true,false,true],
+//     repeat(10, function() { true }))

@@ -1,168 +1,86 @@
-var make_list = function(length, value) {
-    return repeat(length, function(){return value});
-};
-
-var normalize_list = function(list) {
-    return map(function(x){return div(x, sum(list));}, list);
-};
-
 var pam = function(arr,f) {
     return map(f,arr)
 };
 
-var OED = function(params) {
-    //to do: model input check
-    var models = params.models;
+var score = function(erp, x) {
+    // for backwards compatibility with webppl < 0.7
+    return Math.max(erp.score(null, x), erp.score(x));
+}
 
-    var priors = (params.models_prior == undefined)
-        ? make_list(models.length, 1/models.length)
-        : normalize_list(params.models_prior);
+var exp = function(x) {
+    return Math.exp(x);
+}
 
-    var numParticipants = (params.num_participants == undefined)
-        ? [1]
-        : params.num_participants;
-
-    var nparts_samples = (params.num_participants_samples == undefined) ? 2000:
-        params.num_participants_samples;
-
-    //to do: experiment input check
-    var experiments = params.experiments;
-
-    var temp_data = (numParticipants.length == 1)
-        ? pam(
-            experiments,
-            function(expt){
-                var modelPredictions = map(function(models){models(expt)},
-                                           models);
-                var args = {
-                    experiment: expt,
-                    expectedKL: webpplOed.get_expected_kl(modelPredictions, priors),
-                    numParticipants: numParticipants[0],
-                    modelPredictions: modelPredictions
-                };
-
-                return webpplOed.make_datum(args);
-            })
-        : mapReduce1(
-            append,
-            function(expt) {
-                var modelPredictions = map(function(models){models(expt)},
-                                           models);
-                pam(numParticipants,
-                    function(num){
-                        var args = {
-                            experiment: expt,
-                            expectedKL: webpplOed.get_expected_kl_participants_sample(modelPredictions, priors, numParticipants, nparts_samples),
-                            numParticipants: num,
-                            modelPredictions: modelPredictions
-                        };
-
-                        return webpplOed.make_datum(args)
-                    })
-            },
-            experiments);
-
-    var data = webpplOed.make_data(temp_data);
-    return data;
-};
+var expectation = function(erp) {
+    sum(map(function(state) { return exp(score(erp, state)) * state },
+            erp.support()))
+}
 
 var KL = function(P, Q) {
     var statesP = P.support();
     var statesQ = Q.support();
 
     // TODO: assert that states1 = states2
-
-    return sum(pam(statesP,
-                   function(state) {
-                       var scoreP = P.score(null, state);
-                       var scoreQ = Q.score(null, state);
-
-                       var probP = Math.exp(scoreP);
-
-                       //    P(i) * log[ P(i) / Q(i) ]
-                       // =  P(i) * [log(P(i) - log(Q(i)))]
-                       return probP * (scoreP - scoreQ);
-                   }
-                  ))
-
+    return sum(map(
+        function(state) {
+            var scoreP = score(P, state), scoreQ = score(Q, state);
+            var probP = exp(scoreP);
+            // P(i) * log[ P(i) / Q(i) ] =  P(i) * [log(P(i) - log(Q(i)))]
+            return probP * (scoreP - scoreQ);
+        },
+        statesP));
 }
 
-// compute empirical information gain
-var EIG = function(models, experiment, responses) {
-    var allModelPredictions = pam(models, function(m) { return m(experiment) });
+// compute actual information gain
+var AIG = function(mSample, x, y) {
+    var mPrior = Enumerate(function() { return mSample().name });
 
-    var modelNames = ['bias','markov'];
-
-    var prior = Enumerate(function() {
-        return uniformDraw(modelNames);
-    });
-
-    var posterior = Enumerate(function() {
-        var whichModel = randomInteger(models.length);
-
-        var modelPredictions = allModelPredictions[whichModel];
-
-        var score = sum(pam(responses,
-                            function(response) {
-                                return modelPredictions.score(null, response)
-                            }
-                           ))
-        factor(score);
-
-        return modelNames[whichModel];
+    var mPosterior = Enumerate(function() {
+        var m = mSample();
+        var mx = m(x);
+        var LL = sum(map(function(yi) {return score(mx, yi)}, y));
+        factor(LL);
+        return m.name;
     })
 
-    return KL(posterior, prior);
-
+    return KL(mPosterior, mPrior);
 }
 
-var expectation = function(erp) {
-    sum(pam(erp.support(),
-            function(state) { return Math.exp(erp.score(null, state)) * state }
-           ))
-}
 
-var expectedKL = function(experiment, modelNames, modelFunctions, measurements) {
-    var responseDistribution = Enumerate(function() {
-        var modelIndex = uniformDraw([0,1]);
-        var modelName = modelNames[modelIndex];
-        var modelFunction = modelFunctions[modelIndex];
+var EIG = function(args) {
+    var mSample = args.mSample, xSample = args.xSample, ySample = args.ySample;
+    // example: could use MH for M1 but then enumerate for M2
 
-        var modelResponseDist = modelFunction(experiment);
+    var mPrior = Enumerate(function() { return mSample().name });
 
-        var measurement = uniformDraw(measurements);
+    Enumerate(function() {
+        var x = xSample();
 
-        factor(modelResponseDist.score(null, measurement));
+        // according to the prior distribution on models,
+        // how likely is each response?
+        var yLikelihood = Enumerate(function() {
+            var y = ySample();
+            var m = mSample();
+            var mx = m(x);
+            factor(score(mx, y));
+            return y;
+        });
 
-        return measurement;
-    });
+        // according to the above distribution on responses,
+        // what is the posterior distribution on models?
+        var KLDist = Enumerate(function() {
+            var y = sample(yLikelihood);
+            var mPosterior = Enumerate(function() {
+                var m = mSample();//sample(fPrior);
+                var mx = m(x);
+                factor(score(mx, y))
+                return m.name;
+            })
 
-    // for each response in response distribution, how much does it update beliefs about models?
-
-    var prior = Enumerate(function() {
-        return uniformDraw(modelNames)
-    });
-
-    var modelPredictions = map(function(f) { return f(experiment)},
-                               modelFunctions);
-
-    var dist = Enumerate(function() {
-        var response = sample(responseDistribution);
-
-        var posterior = Enumerate(function() {
-            var modelIndex = randomInteger(modelNames.length);
-            var modelName = modelNames[modelIndex];
-            var modelPrediction = modelPredictions[modelIndex];
-
-            factor(modelPrediction.score(null, response));
-
-            return modelName;
-        })
-
-        return KL(posterior, prior);
-
-    });
-
-    return expectation(dist)
-
+            return KL(mPosterior, mPrior);
+        });
+        var eig = expectation(KLDist);
+        factor(Math.exp(eig));
+        return {x: x, EIG: eig}
+    })
 }
