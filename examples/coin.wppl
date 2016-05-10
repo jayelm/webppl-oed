@@ -88,8 +88,14 @@ var biasCoinN = function(args) {
 //              N: 2
 //             })
 
+// TODO: add convenience method for converting a model of a single subject response to
+// multiple subject responses
 
-EIG({mSample: function() { uniformDraw([biasCoinN, markovCoinN]) },
-     xSample: function() { return {sequence: repeat(4, flip), N: 2} }},
-    {Y1: function(m) { MH(m, 20) }}
-   )
+util.seedRNG(1)
+EIG({
+    mSample: function() { uniformDraw([biasCoinN, markovCoinN]) },
+    xSample: function() { return {sequence: repeat(4, flip), N: 5} },
+    infer: {
+        Y: function(m) { MH(m, 20) }
+    }
+})

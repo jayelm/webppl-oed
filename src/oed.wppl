@@ -47,13 +47,12 @@ var AIG = function(mSample, x, y) {
 }
 
 
-var EIG = function(args, _infer) {
+var EIG = function(args) {
     var mSample = args.mSample, xSample = args.xSample;
     // example: could use MH for M1 but then enumerate for M2
-    var infer = _infer || {},
+    var infer = args.infer || {},
         inferX = infer.X || Enumerate,
-        inferY1 = infer.Y1 || Enumerate,
-        inferY2 = infer.Y2 || Enumerate,
+        inferY = infer.Y || Enumerate,
         inferM1 = infer.M1 || Enumerate,
         inferM2 = infer.M2 || Enumerate;
 
@@ -72,23 +71,14 @@ var EIG = function(args, _infer) {
     inferX(function() {
         var x = xSample();
 
-        // wrt the prior on models, how likely is each response?
-        var yPredictive = inferY1(function() {
-            var m = sample(mPrior);
-            var f = m.func;
-            var mx = f(x);
-            var y = sample(mx); // TODO: handle model parameters by running this until we get a Distribution?
-            return y;
-        });
-
         // wrt the above distribution on responses, what is the posterior distribution on models?
-        var KLDist = inferY2(function() {
-            var y = sample(yPredictive);
+        var KLDist = inferY(function() {
+            // p(y)
+            var m = sample(mPrior), f = m.func;
+            var y = sample(f(x)); // TODO: handle model parameters by running this until we get a Distribution
             var mPosterior = inferM2(function() {
-                var m = sample(mPrior);
-                var f = m.func;
-                var mx = f(x);
-                factor(score(mx, y))
+                var m = sample(mPrior), f = m.func;
+                factor(score(f(x), y))
                 return m;
             })
 
