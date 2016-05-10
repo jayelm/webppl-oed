@@ -53,11 +53,11 @@ var EIG = function(args, _infer) {
     var infer = _infer || {},
         inferX = infer.X || Enumerate,
         inferY1 = infer.Y1 || Enumerate,
-        inferY2 = infer.Y1 || Enumerate,
-        inferM1 = infer.Y1 || Enumerate,
-        inferM2 = infer.Y1 || Enumerate;
+        inferY2 = infer.Y2 || Enumerate,
+        inferM1 = infer.M1 || Enumerate,
+        inferM2 = infer.M2 || Enumerate;
 
-    var mPrior = Enumerate(function() {
+    var mPrior = inferM1(function() {
         var m = mSample();
         // if we just return the function, webppl returns a support with only
         // one element because it has trouble comparing functions, so
