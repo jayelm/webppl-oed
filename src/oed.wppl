@@ -73,17 +73,17 @@ var EIG = function(args, _infer) {
         var x = xSample();
 
         // wrt the prior on models, how likely is each response?
-        var yLikelihood = inferY1(function() {
+        var yPredictive = inferY1(function() {
             var m = sample(mPrior);
             var f = m.func;
             var mx = f(x);
-            var y = sample(mx);
+            var y = sample(mx); // TODO: handle model parameters by running this until we get a Distribution?
             return y;
         });
 
         // wrt the above distribution on responses, what is the posterior distribution on models?
         var KLDist = inferY2(function() {
-            var y = sample(yLikelihood);
+            var y = sample(yPredictive);
             var mPosterior = inferM2(function() {
                 var m = sample(mPrior);
                 var f = m.func;
@@ -95,7 +95,7 @@ var EIG = function(args, _infer) {
             return KL(mPosterior, mPrior);
         });
         var eig = expectation(KLDist);
-        factor(eig); // can we convert kl to a probability somehow? e.g., probability of observing the posterior distribution given the prior? is this useful?
+        factor(eig);
         return {x: x, EIG: eig}
     })
 }
