@@ -48,7 +48,7 @@ var AIG = function(mSample, x, y) {
 
 
 var EIG = function(args, _infer) {
-    var mSample = args.mSample, xSample = args.xSample, ySample = args.ySample;
+    var mSample = args.mSample, xSample = args.xSample;
     // example: could use MH for M1 but then enumerate for M2
     var infer = _infer || {},
         inferX = infer.X || Enumerate,
@@ -74,11 +74,10 @@ var EIG = function(args, _infer) {
 
         // wrt the prior on models, how likely is each response?
         var yLikelihood = inferY1(function() {
-            var y = ySample();
             var m = sample(mPrior);
             var f = m.func;
             var mx = f(x);
-            factor(score(mx, y));
+            var y = sample(mx);
             return y;
         });
 
