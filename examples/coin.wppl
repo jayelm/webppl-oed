@@ -50,6 +50,13 @@ var markovCoin = function(sequence) {
 //     [true,true,false,true],
 //     repeat(10, function() { true }))
 
+var fairCoinN = function(args) {
+    var sequence = args.sequence, N = args.N;
+    Enumerate(function(){
+        return repeat(N, flip)
+    })
+}
+
 
 var markovCoinN = function(args) {
     var sequence = args.sequence, N = args.N;
