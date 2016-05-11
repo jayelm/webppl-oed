@@ -1,3 +1,5 @@
+var _ = underscore;
+
 var coinWeights = [0.01, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 0.99];
 
 // assumes a.length == b.length
@@ -57,6 +59,31 @@ var fairCoinN = function(args) {
     //})
 }
 
+var fairSingle = cache(function(sequence) {
+    Enumerate(function() {
+        return flip()
+    })
+})
+
+var fairGroup = function(sequence, ys) {
+    var yDist = fairSingle(sequence);
+    return sum(pam(ys, function(y) { score(yDist, y) }))
+}
+
+var biasSingle = cache(function(sequence) {
+    Enumerate(function() {
+        var p = uniformDraw(coinWeights);
+        var sampled = repeat(sequence.length, function() { flip(p) })
+        condition(arraysEqual(sampled, sequence))
+        return flip(p);
+    })
+});
+
+var biasGroup = function(sequence, ys) {
+    var yDist = biasSingle(sequence);
+    return sum(pam(ys, function(y) { score(yDist, y) }))
+}
+
 
 var markovSingle = cache(function(sequence) {
     Enumerate(function() {
@@ -86,19 +113,6 @@ var markovGroup = function(sequence, ys) {
     return sum(pam(ys, function(y) { score(yDist, y) }))
 }
 
-var biasSingle = cache(function(sequence) {
-    Enumerate(function() {
-        var p = uniformDraw(coinWeights);
-        var sampled = repeat(sequence.length, function() { flip(p) })
-        condition(arraysEqual(sampled, sequence))
-        return flip(p);
-    })
-});
-
-var biasGroup = function(sequence, ys) {
-    var yDist = biasSingle(sequence);
-    return sum(pam(ys, function(y) { score(yDist, y) }))
-}
 
 // biasCoinN({sequence: [true,true,true,true], N: 1},
 //           [false])
@@ -107,19 +121,25 @@ var biasGroup = function(sequence, ys) {
 // TODO: add convenience method for converting a model of a single subject response to
 // multiple subject responses
 
-util.seedRNG(1)
+util.seedRNG(3)
 
-var N = 20;
+var N = 100;
 var dist = EIG({
-    mSample: function() { uniformDraw([markovGroup, biasGroup]) },
-    xSample: function() { repeat(4, flip) },
+    mSample: function() { uniformDraw([fairGroup, biasGroup, markovGroup]) },
+    mNameSample: function() { uniformDraw(['fairGroup', 'biasGroup', 'markovGroup']) },
+    mFuncs: {fairGroup: fairGroup, biasGroup: biasGroup, markovGroup: markovGroup},
+    xSample: function() { [[true,true,true,true]] /*Enumerate(function() { repeat(4,flip)}).support()*/ },
     ySample: function() { repeat(N, flip) },
     infer: {
-        Y: function(g) { MH(g, 4000) }
+        Y: function(g) { MCMC(g, {samples: 5000}) }
     }
 });
 
-dist
+
+
+_.sortBy(dist, 'EIG')
+
+
 
 // markovSingle([true,true,true,true])
 
