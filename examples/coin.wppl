@@ -52,16 +52,16 @@ var markovCoin = function(sequence) {
 
 var fairCoinN = function(args) {
     var sequence = args.sequence, N = args.N;
-    Enumerate(function(){
+    //Enumerate(function(){
         return repeat(N, flip)
-    })
+    //})
 }
 
 
-var markovCoinN = function(args) {
-    var sequence = args.sequence, N = args.N;
-    Enumerate(function(){
+var markovSingle = cache(function(sequence) {
+    Enumerate(function() {
         var transitionProb = uniformDraw(coinWeights);
+
         var generateSequence = function(n, flipsSoFar) {
             if (flipsSoFar.length == n) {
                 return flipsSoFar;
@@ -72,37 +72,61 @@ var markovCoinN = function(args) {
                                                flip(transitionProb) ? !lastFlip : lastFlip))
             }
         }
-
         var firstCoin = flip();
         var sampled = generateSequence(sequence.length, [firstCoin]);
         condition(arraysEqual(sampled, sequence));
-
-        return repeat(N, function() { return flip(transitionProb) ? !last(sampled) : last(sampled) });
+        return flip( transitionProb ) ? !last(sampled) : last(sampled);
     })
+});
+
+// DECIDE: x includes experiment setting AND measurement properties?
+// switch type to x -> y -> logp?
+var markovGroup = function(sequence, ys) {
+    var yDist = markovSingle(sequence);
+    return sum(pam(ys, function(y) { score(yDist, y) }))
 }
 
-var biasCoinN = function(args) {
-    var sequence = args.sequence, N = args.N;
-    Enumerate(function(){
+var biasSingle = cache(function(sequence) {
+    Enumerate(function() {
         var p = uniformDraw(coinWeights);
         var sampled = repeat(sequence.length, function() { flip(p) })
         condition(arraysEqual(sampled, sequence))
-        return repeat(N, function() { flip(p) })
+        return flip(p);
     })
+});
+
+var biasGroup = function(sequence, ys) {
+    var yDist = biasSingle(sequence);
+    return sum(pam(ys, function(y) { score(yDist, y) }))
 }
 
-// markovCoinN({sequence: [true,false,true,false],
-//              N: 2
-//             })
+// biasCoinN({sequence: [true,true,true,true], N: 1},
+//           [false])
+
 
 // TODO: add convenience method for converting a model of a single subject response to
 // multiple subject responses
 
 util.seedRNG(1)
-EIG({
-    mSample: function() { uniformDraw([biasCoinN, markovCoinN]) },
-    xSample: function() { return {sequence: repeat(4, flip), N: 5} },
+
+var N = 20;
+var dist = EIG({
+    mSample: function() { uniformDraw([markovGroup, biasGroup]) },
+    xSample: function() { [true,false,true,false] },
+    ySample: function() { repeat(N, flip) },
     infer: {
-        Y: function(m) { MH(m, 20) }
+        Y: function(g) { MH(g, 2000) }
     }
-})
+});
+
+[dist.support()[0].EIG,
+ dist.support()[0].VIG]
+
+
+// markovSingle([true,true,true,true])
+
+
+
+// markovGroup([true,true,true,true],
+//             [true,true]
+//            )

@@ -1,10 +1,13 @@
+var _ = underscore;
+
 var pam = function(arr,f) {
     return map(f,arr)
 };
 
 var score = function(erp, x) {
     // for backwards compatibility with webppl < 0.7
-    return Math.max(erp.score(null, x), erp.score(x));
+    //return Math.max(erp.score(null, x), erp.score(x));
+    return erp.score(x)
 }
 
 var exp = function(x) {
@@ -13,6 +16,13 @@ var exp = function(x) {
 
 var expectation = function(erp) {
     sum(map(function(state) { return exp(score(erp, state)) * state },
+            erp.support()))
+}
+
+var variance = function(erp) {
+    var mean = expectation(erp)
+
+    sum(map(function(state) { return exp(score(erp, state)) * (state - mean)*(state-mean) },
             erp.support()))
 }
 
@@ -47,8 +57,9 @@ var AIG = function(mSample, x, y) {
 }
 
 
+// notes: doesn't seem to work with incrementalMH right now
 var EIG = function(args) {
-    var mSample = args.mSample, xSample = args.xSample;
+    var mSample = args.mSample, xSample = args.xSample, ySample = args.ySample;
     // example: could use MH for M1 but then enumerate for M2
     var infer = args.infer || {},
         inferX = infer.X || Enumerate,
@@ -68,25 +79,30 @@ var EIG = function(args) {
         }
     });
 
+
     inferX(function() {
         var x = xSample();
 
+
         // wrt the above distribution on responses, what is the posterior distribution on models?
         var KLDist = inferY(function() {
-            // p(y)
             var m = sample(mPrior), f = m.func;
-            var y = sample(f(x)); // TODO: handle model parameters by running this until we get a Distribution
-            var mPosterior = inferM2(function() {
+            var y = ySample();
+            var scoreY = f(x,y);
+            factor(scoreY);
+
+            var mPosterior = Enumerate(function() {
                 var m = sample(mPrior), f = m.func;
-                factor(score(f(x), y))
+                factor(f(x,y))
                 return m;
-            })
+            });
 
             return KL(mPosterior, mPrior);
         });
-        var eig = expectation(KLDist);
-        factor(eig);
-        return {x: x, EIG: eig}
+        // is there a way of getting confidence intervals around eig?
+        var EIG = expectation(KLDist);
+        var VIG = variance(KLDist);
+        return {x: x, EIG: EIG, VIG: VIG}
     })
 }
 
