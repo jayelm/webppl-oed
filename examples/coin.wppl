@@ -52,23 +52,22 @@ var markovCoin = function(sequence) {
 //     [true,true,false,true],
 //     repeat(10, function() { true }))
 
-var fairCoinN = function(args) {
-    var sequence = args.sequence, N = args.N;
-    //Enumerate(function(){
-        return repeat(N, flip)
-    //})
-}
-
 var fairSingle = cache(function(sequence) {
     Enumerate(function() {
         return flip()
     })
 })
 
-var fairGroup = function(sequence, ys) {
+var fairGroup = function(sequence, counts) {
     var yDist = fairSingle(sequence);
-    return sum(pam(ys, function(y) { score(yDist, y) }))
+    var numHeads = counts[0],
+        numTails = counts[1];
+
+    var p = Math.exp(score(yDist, true));
+
+    return score(binomialERP({n: numHeads + numTails, p: p}), numHeads)
 }
+
 
 var biasSingle = cache(function(sequence) {
     Enumerate(function() {
@@ -79,9 +78,14 @@ var biasSingle = cache(function(sequence) {
     })
 });
 
-var biasGroup = function(sequence, ys) {
+var biasGroup = function(sequence, counts) {
     var yDist = biasSingle(sequence);
-    return sum(pam(ys, function(y) { score(yDist, y) }))
+    var numHeads = counts[0],
+        numTails = counts[1];
+
+    var p = Math.exp(score(yDist, true));
+
+    return score(binomialERP({n: numHeads + numTails, p: p}), numHeads)
 }
 
 
@@ -108,9 +112,15 @@ var markovSingle = cache(function(sequence) {
 
 // DECIDE: x includes experiment setting AND measurement properties?
 // type is x -> y -> logp
-var markovGroup = function(sequence, ys) {
+var markovGroup = function(sequence, counts) {
     var yDist = markovSingle(sequence);
-    return sum(pam(ys, function(y) { score(yDist, y) }))
+    var numHeads = counts[0],
+        numTails = counts[1];
+
+    var n = numHeads + numTails;
+    var p = Math.exp(score(yDist, true));
+
+    return score(binomialERP({n: n, p: p}), numHeads)
 }
 
 
@@ -121,30 +131,26 @@ var markovGroup = function(sequence, ys) {
 // TODO: add convenience method for converting a model of a single subject response to
 // multiple subject responses
 
-util.seedRNG(3)
+util.seedRNG(3);
 
-var N = 100;
+
+var N = 20;
 var dist = EIG({
-    mSample: function() { uniformDraw([fairGroup, biasGroup, markovGroup]) },
-    mNameSample: function() { uniformDraw(['fairGroup', 'biasGroup', 'markovGroup']) },
+    //mSample: function() { uniformDraw([biasGroup, markovGroup]) },
+    mNameSample: function() { uniformDraw(['biasGroup', 'markovGroup']) },
     mFuncs: {fairGroup: fairGroup, biasGroup: biasGroup, markovGroup: markovGroup},
-    xSample: function() { [[true,true,true,true]] /*Enumerate(function() { repeat(4,flip)}).support()*/ },
-    ySample: function() { repeat(N, flip) },
+    xSample: function() { repeat(4,flip) },
+    ySample: function() { var numHeads = randomInteger(N + 1);
+                          return [numHeads, N - numHeads];
+                        },
     infer: {
-        Y: function(g) { MCMC(g, {samples: 5000}) }
+        Y: function(g) { MH(g, 2000) }
     }
 });
 
+dist
 
-
-_.sortBy(dist, 'EIG')
 
 
 
 // markovSingle([true,true,true,true])
-
-
-
-// markovGroup([true,true,true,true],
-//             [true,true]
-//            )

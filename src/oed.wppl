@@ -4,7 +4,9 @@ var pam = function(arr,f) {
 
 var score = function(erp, x) {
     // for backwards compatibility with webppl < 0.7
-    return Math.max(erp.score(null, x), erp.score(x));
+    //return Math.max(erp.score(null, x), erp.score(x));
+    // NB: ^ isn't bullet proof
+    erp.score(x)
 }
 
 var exp = function(x) {
@@ -70,8 +72,8 @@ var EIG = function(args) {
         return mNameSample()
     });
 
-    pam(xSample(),
-        function(x) {
+    inferX(function() {
+        var x = xSample();
         // wrt the above distribution on responses, what is the posterior distribution on models?
         var KLDist = inferY(function() {
             var mName = mNameSample(), m = mFuncs[mName];
@@ -91,11 +93,11 @@ var EIG = function(args) {
 
         // is there a way of getting confidence intervals around eig?
         var EIG = expectation(KLDist);
-    //factor(EIG);
+        factor(EIG);
         // var VIG = variance(KLDist);
         // return {x: x, EIG: EIG, VIG: VIG}
         return {x: x, EIG: EIG}
-        })
+    })
 }
 
 var OED = EIG;
