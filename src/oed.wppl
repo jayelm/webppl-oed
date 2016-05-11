@@ -1,13 +1,10 @@
-var _ = underscore;
-
 var pam = function(arr,f) {
     return map(f,arr)
 };
 
 var score = function(erp, x) {
     // for backwards compatibility with webppl < 0.7
-    //return Math.max(erp.score(null, x), erp.score(x));
-    return erp.score(x)
+    return Math.max(erp.score(null, x), erp.score(x));
 }
 
 var exp = function(x) {
@@ -101,6 +98,7 @@ var EIG = function(args) {
         });
         // is there a way of getting confidence intervals around eig?
         var EIG = expectation(KLDist);
+        factor(EIG);
         var VIG = variance(KLDist);
         return {x: x, EIG: EIG, VIG: VIG}
     })

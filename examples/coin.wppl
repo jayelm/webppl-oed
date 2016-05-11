@@ -80,7 +80,7 @@ var markovSingle = cache(function(sequence) {
 });
 
 // DECIDE: x includes experiment setting AND measurement properties?
-// switch type to x -> y -> logp?
+// type is x -> y -> logp
 var markovGroup = function(sequence, ys) {
     var yDist = markovSingle(sequence);
     return sum(pam(ys, function(y) { score(yDist, y) }))
@@ -112,16 +112,14 @@ util.seedRNG(1)
 var N = 20;
 var dist = EIG({
     mSample: function() { uniformDraw([markovGroup, biasGroup]) },
-    xSample: function() { [true,false,true,false] },
+    xSample: function() { repeat(4, flip) },
     ySample: function() { repeat(N, flip) },
     infer: {
-        Y: function(g) { MH(g, 2000) }
+        Y: function(g) { MH(g, 4000) }
     }
 });
 
-[dist.support()[0].EIG,
- dist.support()[0].VIG]
-
+dist
 
 // markovSingle([true,true,true,true])
 
