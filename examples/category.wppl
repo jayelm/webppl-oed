@@ -89,7 +89,7 @@ var prototypeSingle = cache(function(x) {
             })
     };
 
-    var numSamples = 1000;
+    var numSamples = 5000;
     // do it with MH here so that inference doesn't reach inside this function
     var dist = MH(g, numSamples).support();
 
@@ -128,7 +128,7 @@ var exemplarSingle = cache(function(x) {
                 return prob;
             });
     };
-    var numSamples = 1000;
+    var numSamples = 5000;
     var dist = MH(g, numSamples).support();
 
     // get expected distribution on responsesp
