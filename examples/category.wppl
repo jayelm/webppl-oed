@@ -1,6 +1,9 @@
 var ms78 = {as: [[1, 1, 1, 0], [1, 0, 1, 0], [1, 0, 1, 1], [1, 1, 0, 1], [0, 1, 1, 1]],
             bs: [[1, 1, 0, 0], [0, 1, 1, 0], [0, 0, 0, 1], [0, 0, 0, 0]]};
 
+var opt = {as: [[0,0,0,1], [0,0,1,1], [1,1,0,0], [1,1,1,0], [1,1,1,1]],
+           bs: [[0,1,0,0], [0,1,1,0], [1,0,0,0], [1,0,1,0]]}
+
 var log = function(x) {
     return Math.log(x)
 }
@@ -152,7 +155,7 @@ var prototypeGroup = groupify(prototypeSingle);
 
 EIG({mNameSample: function() { uniformDraw(['exemplarGroup','prototypeGroup']) },
      mFuncs: {exemplarGroup: exemplarGroup, prototypeGroup: prototypeGroup},
-     xSample: function() { ms78 },
+     xSample: function() { opt },
      ySample: function() { return {n: 1, numAs: repeat(16, function() { return flip() ? 1 : 0 }) } },
      infer: {
          Y: function(g) { Enumerate(g) }
