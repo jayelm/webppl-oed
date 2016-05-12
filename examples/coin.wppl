@@ -133,26 +133,30 @@ var markovGroup = function(sequence, counts) {
 
 util.seedRNG(3);
 
+console.log('N,seq,eig\n')
 
-var N = 100;
-var dist = EIG({
-    //mSample: function() { uniformDraw([biasGroup, markovGroup]) },
-    mNameSample: function() { uniformDraw(['fairGroup', 'biasGroup', 'markovGroup']) },
-    mFuncs: {fairGroup: fairGroup, biasGroup: biasGroup, markovGroup: markovGroup},
-    xSample: function() { repeat(4, flip) },
-    ySample: function() { var numHeads = randomInteger(N + 1);
-                          return [numHeads, N - numHeads];
-                        },
-    infer: {
-        Y: function(g) { Enumerate(g) }
-    }
-});
+pam(_.range(1,100), function(N) {
+    var dist = EIG({
+        //mSample: function() { uniformDraw([biasGroup, markovGroup]) },
+        mNameSample: function() { uniformDraw(['fairGroup', 'biasGroup', 'markovGroup']) },
+        mFuncs: {fairGroup: fairGroup, biasGroup: biasGroup, markovGroup: markovGroup},
+        xSample: function() { repeat(4, flip) },
+        ySample: function() { var numHeads = randomInteger(N + 1);
+                              return [numHeads, N - numHeads];
+                            },
+        infer: {
+            Y: function(g) { Enumerate(g) }
+        }
 
-'seq,eig\n'  + map(function(z) {
-    map(function(xi) { xi ? 1 : 0 }, z.x).join('') + ',' + z.EIG
-}, _.sortBy(dist.support(), 'EIG').reverse() ).join('\n')
+    });
+
+    console.log(map(function(z) {
+        [N, map(function(xi) { xi ? 1 : 0 }, z.x).join(''), z.EIG].join(',')
+    }, _.sortBy(dist.support(), 'EIG').reverse() ).join('\n'))
+})
 
 
 
+''
 
 // markovSingle([true,true,true,true])
