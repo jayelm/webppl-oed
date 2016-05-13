@@ -56,7 +56,8 @@ var AIG = function(args) {
         var LL = m(x,y);
         factor(LL);
         return mName;
-    })
+    });
+    //console.log(util.serialize(mPosterior))
 
     return KL(mPosterior, mPrior);
 }

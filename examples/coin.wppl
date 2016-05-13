@@ -133,30 +133,64 @@ var markovGroup = function(sequence, counts) {
 
 util.seedRNG(3);
 
-console.log('N,seq,eig\n')
+// console.log('N,seq,eig\n')
 
-pam(_.range(1,100), function(N) {
-    var dist = EIG({
-        //mSample: function() { uniformDraw([biasGroup, markovGroup]) },
-        mNameSample: function() { uniformDraw(['fairGroup', 'biasGroup', 'markovGroup']) },
-        mFuncs: {fairGroup: fairGroup, biasGroup: biasGroup, markovGroup: markovGroup},
-        xSample: function() { repeat(4, flip) },
-        ySample: function() { var numHeads = randomInteger(N + 1);
-                              return [numHeads, N - numHeads];
-                            },
-        infer: {
-            Y: function(g) { Enumerate(g) }
-        }
+// pam([1], function(N) {
+//     var dist = EIG({
+//         //mSample: function() { uniformDraw([biasGroup, markovGroup]) },
+//         mNameSample: function() { uniformDraw(['biasGroup', 'markovGroup']) },
+//         mFuncs: {fairGroup: fairGroup, biasGroup: biasGroup, markovGroup: markovGroup},
+//         xSample: function() { repeat(4, flip) },
+//         ySample: function() { var numHeads = randomInteger(N + 1);
+//                               return [numHeads, N - numHeads];
+//                             },
+//         infer: {
+//             Y: function(g) { Enumerate(g) }
+//         }
 
-    });
+//     });
 
-    console.log(map(function(z) {
-        [N, map(function(xi) { xi ? 1 : 0 }, z.x).join(''), z.EIG].join(',')
-    }, _.sortBy(dist.support(), 'EIG').reverse() ).join('\n'))
-})
+//     console.log(map(function(z) {
+//         [N, map(function(xi) { xi ? 1 : 0 }, z.x).join(''), z.EIG].join(',')
+//     }, _.sortBy(dist.support(), 'EIG').reverse() ).join('\n'))
+// })
 
+var xs = Enumerate(function() { repeat(4, flip)}).support();
 
+// in lexical graphical order
+var empiricalCounts = [
+    [8,16], // hhhh
+    [4,16], // hhht
+    [6,16], // ...
+    [8,18],
+    [5,15],
+    [10,12],
+    [8,12],
+    [12,11],
+    [10,10],
+    [12,9],
+    [12,8],
+    [20,5],
+    [16,4],
+    [15,7],
+    [21,5],
+    [11,9]];
 
-''
+var round = function(x, n) {
+    var m = Math.pow(10,n)
+    return Math.round(x*m)/m;
+}
 
-// markovSingle([true,true,true,true])
+var res = map2(function(x,counts) {
+
+    var ig = AIG({mNameSample: function() { uniformDraw(['biasGroup', 'markovGroup']) },
+                  mFuncs: {fairGroup: fairGroup, biasGroup: biasGroup, markovGroup: markovGroup},
+                  x: x,
+                  y: counts
+                 });
+
+    return {x: map(function(v) { return v ? 'H' : 'T' }, x).join(''), ig: round(ig, 3)}
+
+}, xs, empiricalCounts);
+
+console.table(_.sortBy(res, 'x'));
