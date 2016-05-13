@@ -1,8 +1,23 @@
-var ms78 = {as: [[1, 1, 1, 0], [1, 0, 1, 0], [1, 0, 1, 1], [1, 1, 0, 1], [0, 1, 1, 1]],
+var _ = underscore;
+
+var booleanize = function(exp){
+    var helper = function(ar) {
+        return pam(ar, function(e) { e == 1})
+    }
+
+    return {as: map(helper, exp.as),
+            bs: map(helper, exp.bs)}
+};
+
+var _ms78 = {as: [[1, 1, 1, 0], [1, 0, 1, 0], [1, 0, 1, 1], [1, 1, 0, 1], [0, 1, 1, 1]],
             bs: [[1, 1, 0, 0], [0, 1, 1, 0], [0, 0, 0, 1], [0, 0, 0, 0]]};
 
-var opt = {as: [[0,0,0,1], [0,0,1,1], [1,1,0,0], [1,1,1,0], [1,1,1,1]],
-           bs: [[0,1,0,0], [0,1,1,0], [1,0,0,0], [1,0,1,0]]}
+var ms78 = booleanize(_ms78);
+
+var _opt = {as: [[0,0,0,1], [0,0,1,1], [1,1,0,0], [1,1,1,0], [1,1,1,1]],
+            bs: [[0,1,0,0], [0,1,1,0], [1,0,0,0], [1,0,1,0]]}
+
+var opt = booleanize(_opt);
 
 var log = function(x) {
     return Math.log(x)
@@ -51,11 +66,13 @@ var prototypeSingle = cache(function(x) {
     var as = x.as, bs = x.bs,
         recall = append(as, bs);
 
+    var recallStrings = map(function(obj) { obj.join(',') }, recall);
+
     // returns true if x is in the training set, false if not
-    var isRecall = function(x) {
-        return filter(function(y) { return arrayEq(x,y) },
-                      recall).length > 0;
-    };
+    var isRecall = (function(obj) {
+        var objString = obj.join(',');
+        return _.contains(recallStrings, objString);
+    });
 
     var g = function() {
         var weights = repeat(4, function() { uniform(0, 1) });
@@ -155,9 +172,14 @@ var prototypeGroup = groupify(prototypeSingle);
 
 EIG({mNameSample: function() { uniformDraw(['exemplarGroup','prototypeGroup']) },
      mFuncs: {exemplarGroup: exemplarGroup, prototypeGroup: prototypeGroup},
-     xSample: function() { ms78 },
+     xSample: function() { opt },
      ySample: function() { return {n: 1, numAs: repeat(16, function() { return flip() ? 1 : 0 }) } },
      infer: {
          Y: function(g) { Enumerate(g) }
      }
     })
+
+// for ms78, it was ~0.03
+
+
+//prototypeSingle(ms78).sort().join(' ')
