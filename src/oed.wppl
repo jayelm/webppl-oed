@@ -41,15 +41,21 @@ var KL = function(P, Q) {
 }
 
 // compute actual information gain
-var AIG = function(mSample, x, y) {
-    var mPrior = Enumerate(function() { return mSample().name });
+var AIG = function(args) {
+    var mNameSample = args.mNameSample,
+        mFuncs = args.mFuncs,
+        x = args.x,
+        y = args.y;
+
+    var mPrior = Enumerate(function() {
+        return mNameSample()
+    });
 
     var mPosterior = Enumerate(function() {
-        var m = mSample();
-        var mx = m(x);
-        var LL = sum(map(function(yi) {return score(mx, yi)}, y));
+        var mName = mNameSample(), m = mFuncs[mName];
+        var LL = m(x,y);
         factor(LL);
-        return m.name;
+        return mName;
     })
 
     return KL(mPosterior, mPrior);
