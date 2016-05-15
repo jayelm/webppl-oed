@@ -143,7 +143,7 @@ util.seedRNG(3);
 pam([20], function(N) {
     var dist = EIG({
         //mSample: function() { uniformDraw([biasGroup, markovGroup]) },
-        mNameSample: function() { uniformDraw(['biasGroup', 'markovGroup']) },
+        mNameSample: function() { uniformDraw(['fairGroup', 'biasGroup']) },
         mFuncs: {fairGroup: fairGroup, biasGroup: biasGroup, markovGroup: markovGroup},
         xSample: function() { repeat(4, flip) },
         ySample: function() { var numHeads = randomInteger(N + 1);
