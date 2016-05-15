@@ -100,7 +100,7 @@ var EIG = function(args) {
 
         // is there a way of getting confidence intervals around eig?
         var EIG = expectation(KLDist);
-        factor(EIG);
+        //factor(EIG);
         // var VIG = variance(KLDist);
         // return {x: x, EIG: EIG, VIG: VIG}
         return {x: x, EIG: EIG}

@@ -7,6 +7,10 @@ var round = function(x, n) {
     return Math.round(x*m)/m;
 }
 
+var formatExperiment = function(x) {
+    map(function(xi) { return xi ? 'H' : 'T' }, x).join('')
+}
+
 // assumes a.length == b.length
 var arraysEqual = function(as,bs) {
     return all(idF, map2(function(a, b) { return a === b }, as, bs))
@@ -140,48 +144,69 @@ util.seedRNG(3);
 
 // console.log('N,seq,eig\n')
 
-pam([20], function(N) {
-    var dist = EIG({
-        //mSample: function() { uniformDraw([biasGroup, markovGroup]) },
-        mNameSample: function() { uniformDraw(['fairGroup', 'biasGroup']) },
-        mFuncs: {fairGroup: fairGroup, biasGroup: biasGroup, markovGroup: markovGroup},
-        xSample: function() { repeat(4, flip) },
-        ySample: function() { var numHeads = randomInteger(N + 1);
-                              return [numHeads, N - numHeads];
-                            },
-        infer: {
-            Y: function(g) { Enumerate(g) }
-        }
+var empiricalCounts = [
+    [8,16], // hhhh
+    [4,16], // hhht
+    [6,16], // ...
+    [8,18],
+    [5,15],
+    [10,12],
+    [8,12],
+    [12,11],
+    [10,10],
+    [12,9],
+    [12,8],
+    [20,5],
+    [16,4],
+    [15,7],
+    [21,5],
+    [11,9]];
 
-    });
+var experiments = Enumerate(function() { repeat(4, flip)}).support().reverse();
 
-    var output = map(function(z) {
-        return {x: map(function(xi) { return xi ? 'H' : 'T' }, z.x).join(''), eig: round(z.EIG, 3)}
-    }, dist.support() )
+// NB: must run with webppl's binomial scoring approximation disabled
+var dist = map2(
+    function(data, experiment) {
+        var N = sum(data);
+        var mNameSample =function() { uniformDraw(['fairGroup', 'biasGroup']) };
+        var mFuncs = {fairGroup: fairGroup, biasGroup: biasGroup, markovGroup: markovGroup};
 
-    console.table(output.reverse())
-})
+
+        var eig = EIG({
+            mNameSample: mNameSample,
+            mFuncs: mFuncs,
+            xSample: function() { experiment },
+            ySample: function() { var numHeads = randomInteger(N + 1);
+                                  return [numHeads, N - numHeads];
+                                },
+            infer: {
+                Y: function(g) { Enumerate(g) }
+            }
+
+        }).support()[0].EIG;
+
+        var aig = AIG({mNameSample: mNameSample,
+                       mFuncs: mFuncs,
+                       x: experiment,
+                       y: data
+                      });
+
+        return {experiment: formatExperiment(experiment),
+                N: N,
+                EIG: round(eig, 4),
+                AIG: round(aig, 4)
+               };
+
+        return output[0];
+    },
+    empiricalCounts,
+    experiments);
+
+console.table(dist)
 
 // var xs = Enumerate(function() { repeat(4, flip)}).support();
 
 // // in lexical graphical order
-// var empiricalCounts = [
-//     [8,16], // hhhh
-//     [4,16], // hhht
-//     [6,16], // ...
-//     [8,18],
-//     [5,15],
-//     [10,12],
-//     [8,12],
-//     [12,11],
-//     [10,10],
-//     [12,9],
-//     [12,8],
-//     [20,5],
-//     [16,4],
-//     [15,7],
-//     [21,5],
-//     [11,9]];
 
 
 // var res = map2(function(x,counts) {
