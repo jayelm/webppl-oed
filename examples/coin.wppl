@@ -1,5 +1,16 @@
 var _ = underscore;
 
+var correlation = function(xs, ys) {
+    var mx = sum(xs)/xs.length,
+        my = sum(ys)/ys.length;
+
+    var num = sum(map2(function(x,y) { (x-mx) * (y-my)}, xs, ys));
+    var den = Math.sqrt(sum(map(function(x) { (x-mx) * (x-mx)},xs))) *
+        Math.sqrt(sum(map(function(y) { (y-my) * (y-my)},ys)));
+
+    num/den
+}
+
 var coinWeights = [0.01, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 0.99];
 
 var round = function(x, n) {
@@ -193,16 +204,17 @@ var dist = map2(
 
         return {experiment: formatExperiment(experiment),
                 N: N,
-                EIG: round(eig, 4),
-                AIG: round(aig, 4)
+                eig: round(eig, 4),
+                aig: round(aig, 4)
                };
-
-        return output[0];
     },
     empiricalCounts,
     experiments);
 
 console.table(dist)
+
+'R2 = ' + round(Math.pow(correlation(_.pluck(dist, 'eig'), _.pluck(dist, 'aig')), 2),
+                4)
 
 // var xs = Enumerate(function() { repeat(4, flip)}).support();
 
