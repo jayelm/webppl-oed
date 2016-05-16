@@ -195,8 +195,51 @@ var mFuncs = {exemplarGroup: exemplarGroup, prototypeGroup: prototypeGroup};
 //      y: {n: 57, numAs: [19,46,20,47, 9,36,10,32, 6,28,10,40,48,45,46,51]}
 //     })
 
-AIG({mNameSample: function() { uniformDraw(['exemplarGroup', 'prototypeGroup']) },
-     mFuncs: mFuncs,
-     x: ms78,
-     y: {n: 62, numAs: [7, 12, 16, 35, 13, 22, 14, 50, 28, 40, 54, 57, 28, 48, 46, 54]}
-    })
+// AIG({mNameSample: function() { uniformDraw(['exemplarGroup', 'prototypeGroup']) },
+//      mFuncs: mFuncs,
+//      x: ms78,
+//      y: {n: 62, numAs: [7, 12, 16, 35, 13, 22, 14, 50, 28, 40, 54, 57, 28, 48, 46, 54]}
+//     })
+
+var subjectResponses = babyparse.parseFiles('category-data.csv', {header: true}).data;
+
+var convertCsvRow = function(obj) {
+    var responses = _.pairs(_.omit(obj, ['condition', 'workerId']));
+    var responsesSorted = pam(_.sortBy(responses, '0'),
+                              function(x) { return x[1] === 'TRUE' ? 1 : 0 });
+    return responsesSorted;
+}
+
+var msResponses = map(convertCsvRow, _.where(subjectResponses, {condition: 'ms'}));
+var opResponses = map(convertCsvRow, _.where(subjectResponses, {condition: 'opt-total'}));
+
+var subset = function(xs, n) {
+      if (n <= 0 || xs.length == 0) {
+        return [];
+      }
+      var x = uniformDraw(xs);
+      return append([x], subset(_.without(xs, x), n-1) );
+    }
+
+var ns = _.range(1,62+1);
+
+var res = pam(ns,
+    function(n) {
+
+        var aigs = pam(_.range(1,1001),
+                       function(seed) {
+                           util.seedRNG(seed);
+                           var y = {n: n, numAs: columnSum(subset(msResponses, n)) };
+                           var aig = AIG({mNameSample: function() { uniformDraw(['exemplarGroup', 'prototypeGroup']) },
+                                          mFuncs: mFuncs,
+                                          x: ms78,
+                                          y: y
+                                         });
+                           return {n: n, ex: 'ms', seed: seed, aig: aig}
+                       });
+
+        return aigs
+
+    });
+
+JSON.stringify(_.flatten(res),null,1);
