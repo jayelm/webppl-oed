@@ -221,21 +221,20 @@ var subset = function(xs, n) {
       return append([x], subset(_.without(xs, x), n-1) );
     }
 
-var ns = _.range(1,62+1);
+var ns = _.range(1,57+1);
 
 var res = pam(ns,
     function(n) {
-
         var aigs = pam(_.range(1,1001),
                        function(seed) {
                            util.seedRNG(seed);
-                           var y = {n: n, numAs: columnSum(subset(msResponses, n)) };
+                           var y = {n: n, numAs: columnSum(subset(opResponses, n)) };
                            var aig = AIG({mNameSample: function() { uniformDraw(['exemplarGroup', 'prototypeGroup']) },
                                           mFuncs: mFuncs,
-                                          x: ms78,
+                                          x: opt,
                                           y: y
                                          });
-                           return {n: n, ex: 'ms', seed: seed, aig: aig}
+                           return {n: n, ex: 'op', seed: seed, aig: aig}
                        });
 
         return aigs
