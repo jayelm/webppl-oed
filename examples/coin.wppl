@@ -237,7 +237,7 @@ var mFuncs = {fairGroup: fairGroup, biasGroup: biasGroup, markovGroup: markovGro
 
 console.log('comparison,sequence,eig')
 mapObject(function(comparisonName, mNameSample) {
-    var n = 1;
+    var n = 20;
     var supp = EIG({
         mNameSample: mNameSample,
         mFuncs: mFuncs,
