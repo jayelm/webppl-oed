@@ -9,6 +9,7 @@
   "dependencies": {
     "babyparse": "^0.4.6",
     "console.table": "^0.4.0",
+    "minimist": "^1.2.0",
     "underscore": "^1.8.3"
   }
 }
