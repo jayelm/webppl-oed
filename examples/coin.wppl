@@ -226,71 +226,34 @@ var experiments = Enumerate(function() { repeat(4, flip)}).support().reverse();
 
 // // in lexical graphical order
 
-var mNameSample =function() { uniformDraw(['fairGroup', 'biasGroup', 'markovGroup']) };
+
+var comparisons = {
+    'fair-bias': function() { uniformDraw(['fairGroup', 'biasGroup'])},
+    'bias-markov': function() { uniformDraw(['biasGroup', 'markovGroup'])},
+    'threeway': function() { uniformDraw(['fairGroup', 'biasGroup', 'markovGroup'])}
+};
+
 var mFuncs = {fairGroup: fairGroup, biasGroup: biasGroup, markovGroup: markovGroup};
 
-
-// pam([300],//_.range(1,101),
-//     function(n) {
-//         var dist = EIG({
-//             mNameSample: mNameSample,
-//             mFuncs: mFuncs,
-//             xSample: function() { repeat(4,flip) },
-//             ySample: function() { var numHeads = randomInteger(n + 1);
-//                                   return [numHeads, n - numHeads];
-//                                 },
-//             infer: {
-//                 Y: function(g) { Enumerate(g) }
-//             }
-
-//         });
-
-//         var rows = pam(dist.support(),
-//                        function(row) { return {
-//                            n: n,
-//                            x: formatExperiment(row.x),
-//                            eig: row.EIG
-//                        }});
-
-//         console.log(csvString(rows));
-//     })
-
-// bootstrapping
-// mapN(function(i) {
-//     var n = 100;
-//     var numHeads = binomial({n: n, p: 1/3}),
-//         numTails = n-numHeads;
-//     AIG({
-//         mNameSample: mNameSample,
-//         mFuncs: mFuncs,
-//         x: [true,true,true,true],
-//         y: [numHeads,numTails]
-//     })
-// }, 10);
-
- mapN(function(i) {
-    var n = 50;
-    var numHeads = binomial({n: n, p: 8/(8+16)}),
-        numTails = n-numHeads;
-    AIG({
+console.log('comparison,sequence,eig')
+mapObject(function(comparisonName, mNameSample) {
+    var n = 1;
+    var supp = EIG({
         mNameSample: mNameSample,
         mFuncs: mFuncs,
-        x: [true,true,true,true],
-        y: [8,16]
+        xSample: function() { repeat(4,flip) },
+        ySample: function() { var numHeads = randomInteger(n + 1);
+                              return [numHeads, n - numHeads];
+                            }
+    }).support();
+
+    var rowsFormatted = pam(supp, function(row) {
+        return {comparison: comparisonName,
+                experiment: formatExperiment(row.x),
+                eig: row.EIG}
     })
-}, 10);
 
+    console.log(csvString(rowsFormatted))
 
-// var res = map2(function(x,counts) {
-
-//     var ig = AIG({mNameSample: function() { uniformDraw(['biasGroup', 'markovGroup']) },
-//                   mFuncs: {fairGroup: fairGroup, biasGroup: biasGroup, markovGroup: markovGroup},
-//                   x: x,
-//                   y: counts
-//                  });
-
-//     return {x: map(function(v) { return v ? 'H' : 'T' }, x).join(''), ig: round(ig, 3)}
-
-// }, xs, empiricalCounts);
-
-// console.table(_.sortBy(res, 'x'));
+    return ''
+}, comparisons)
