@@ -83,10 +83,10 @@ var EIG = function(args) {
         var x = xSample();
         // wrt the above distribution on responses, what is the posterior distribution on models?
         var KLDist = inferY(function() {
-            var mName = mNameSample(), m = mFuncs[mName];
+            //var mName = mNameSample(), m = mFuncs[mName];
             var y = ySample();
-            var scoreY = m(x,y);
-            factor(scoreY);
+            //var scoreY = m(x,y);
+            //factor(scoreY);
 
             var mPosterior = inferM2(function() {
                 var m2Name = mNameSample(), m2 = mFuncs[m2Name];

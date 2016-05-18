@@ -230,33 +230,56 @@ var mNameSample =function() { uniformDraw(['fairGroup', 'biasGroup', 'markovGrou
 var mFuncs = {fairGroup: fairGroup, biasGroup: biasGroup, markovGroup: markovGroup};
 
 
-console.log('n,seq,eig')
-pam(_.range(1,101),
-    function(n) {
-        var dist = EIG({
-            mNameSample: mNameSample,
-            mFuncs: mFuncs,
-            xSample: function() { repeat(4,flip) },
-            ySample: function() { var numHeads = randomInteger(n + 1);
-                                  return [numHeads, n - numHeads];
-                                },
-            infer: {
-                Y: function(g) { Enumerate(g) }
-            }
+// pam([300],//_.range(1,101),
+//     function(n) {
+//         var dist = EIG({
+//             mNameSample: mNameSample,
+//             mFuncs: mFuncs,
+//             xSample: function() { repeat(4,flip) },
+//             ySample: function() { var numHeads = randomInteger(n + 1);
+//                                   return [numHeads, n - numHeads];
+//                                 },
+//             infer: {
+//                 Y: function(g) { Enumerate(g) }
+//             }
 
-        });
+//         });
 
-        var rows = pam(dist.support(),
-                       function(row) { return {
-                           n: n,
-                           x: formatExperiment(row.x),
-                           eig: row.EIG
-                       }});
+//         var rows = pam(dist.support(),
+//                        function(row) { return {
+//                            n: n,
+//                            x: formatExperiment(row.x),
+//                            eig: row.EIG
+//                        }});
 
-        console.log(csvString(rows));
+//         console.log(csvString(rows));
+//     })
+
+// bootstrapping
+// mapN(function(i) {
+//     var n = 100;
+//     var numHeads = binomial({n: n, p: 1/3}),
+//         numTails = n-numHeads;
+//     AIG({
+//         mNameSample: mNameSample,
+//         mFuncs: mFuncs,
+//         x: [true,true,true,true],
+//         y: [numHeads,numTails]
+//     })
+// }, 10);
+
+ mapN(function(i) {
+    var n = 50;
+    var numHeads = binomial({n: n, p: 8/(8+16)}),
+        numTails = n-numHeads;
+    AIG({
+        mNameSample: mNameSample,
+        mFuncs: mFuncs,
+        x: [true,true,true,true],
+        y: [8,16]
     })
+}, 10);
 
-''
 
 // var res = map2(function(x,counts) {
 
