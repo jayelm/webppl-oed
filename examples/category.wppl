@@ -19,6 +19,12 @@ var _opt = {as: [[0,0,0,1], [0,0,1,1], [1,1,0,0], [1,1,1,0], [1,1,1,1]],
 
 var opt = booleanize(_opt);
 
+// swaps first A and first B of opt
+var _dummyx = {as: [[0,1,0,0], [0,0,1,1], [1,1,0,0], [1,1,1,0], [1,1,1,1]],
+               bs: [[0,0,0,1], [0,1,1,0], [1,0,0,0], [1,0,1,0]]};
+
+var dummyx = booleanize(_dummyx);
+
 var log = function(x) {
     return Math.log(x)
 }
@@ -61,7 +67,6 @@ var arrayEq = function(x,y,_i) {
 
 var objects = Enumerate(function() { repeat(4,flip) }).support();
 
-// TODO: make this return a Distribution
 var prototypeSingle = cache(function(x) {
     var as = x.as, bs = x.bs,
         recall = append(as, bs);
@@ -106,7 +111,7 @@ var prototypeSingle = cache(function(x) {
             })
     };
 
-    var numSamples = 5;
+    var numSamples = 5000;
     // do it with MH here so that inference doesn't reach inside this function
     var dist = MH(g, numSamples).support();
 
@@ -145,7 +150,7 @@ var exemplarSingle = cache(function(x) {
                 return prob;
             });
     };
-    var numSamples = 5;
+    var numSamples = 5000;
     var dist = MH(g, numSamples).support();
 
     // get expected distribution on responsesp
@@ -172,28 +177,24 @@ var prototypeGroup = groupify(prototypeSingle);
 
 var mFuncs = {exemplarGroup: exemplarGroup, prototypeGroup: prototypeGroup};
 
-var allExperiments = 'abcdefghijklmnopqrstuvwxyz'.split('');
+var allExperiments = [opt, ms78, dummyx];
 
+// read the list of experiments to run from command line args
 var argv = minimist.call(null, process.argv);
 var experimentRange = argv.experimentRange.split(',');
-
 var experimentsToRun = allExperiments.slice(experimentRange[0] - 1,
                                             experimentRange[1]);
 
-experimentsToRun
+var dist = EIG({mNameSample: function() { uniformDraw(['exemplarGroup','prototypeGroup']) },
+                mFuncs: {exemplarGroup: exemplarGroup, prototypeGroup: prototypeGroup},
+                xSample: function() { uniformDraw(experimentsToRun) },
+                ySample: function() { return {n: 1, numAs: repeat(16, function() { return flip() ? 1 : 0 }) } },
+                infer: {
+                    Y: function(g) { Enumerate(g) }
+                }
+               });
 
-// // TODO: read the list of experiments to run from command line args
-
-// var dist = EIG({mNameSample: function() { uniformDraw(['exemplarGroup','prototypeGroup']) },
-//                 mFuncs: {exemplarGroup: exemplarGroup, prototypeGroup: prototypeGroup},
-//                 xSample: function() { opt },
-//                 ySample: function() { return {n: 1, numAs: repeat(16, function() { return flip() ? 1 : 0 }) } },
-//                 infer: {
-//                     Y: function(g) { Enumerate(g) }
-//                 }
-//                });
-
-// dist
+dist.support()
 
 // sample(dist).EIG
 
