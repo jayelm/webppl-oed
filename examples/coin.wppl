@@ -91,7 +91,7 @@ var fairGroup = function(sequence, counts) {
 
     var p = Math.exp(score(yDist, true));
 
-    return score(binomialERP({n: numHeads + numTails, p: p}), numHeads)
+    return score(Binomial({n: numHeads + numTails, p: p}), numHeads)
 }
 
 
@@ -111,7 +111,7 @@ var biasGroup = function(sequence, counts) {
 
     var p = Math.exp(score(yDist, true));
 
-    return score(binomialERP({n: numHeads + numTails, p: p}), numHeads)
+    return score(Binomial({n: numHeads + numTails, p: p}), numHeads)
 }
 
 
@@ -146,7 +146,7 @@ var markovGroup = function(sequence, counts) {
     var n = numHeads + numTails;
     var p = Math.exp(score(yDist, true));
 
-    return score(binomialERP({n: n, p: p}), numHeads)
+    return score(Binomial({n: n, p: p}), numHeads)
 }
 
 

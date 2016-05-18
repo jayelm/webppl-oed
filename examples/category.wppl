@@ -166,7 +166,7 @@ var groupify = function(model) {
         var yDist = model(x);
         var n = responses.n;
 
-        var LL = sum(map2(function(p, k) { return score(binomialERP({n: n, p: p}), k) },
+        var LL = sum(map2(function(p, k) { return score(Binomial({n: n, p: p}), k) },
                        yDist,
                        responses.numAs))
 
