@@ -1,4 +1,4 @@
-[
+var categoryExperiments = [
 {as: [[false,false,false,false],[false,true,true,true],[true,false,true,true],[true,true,false,true],[true,true,true,true]], bs: [[false,false,true,false],[false,true,false,false],[false,true,true,false],[true,false,false,false]]},
 {as: [[false,false,false,false],[false,true,true,true],[true,false,true,true],[true,true,false,true],[true,true,true,true]], bs: [[false,false,true,false],[false,true,false,false],[true,false,false,false],[true,true,true,false]]},
 {as: [[false,false,false,false],[false,true,true,true],[true,false,true,true],[true,true,false,true],[true,true,true,true]], bs: [[false,false,true,false],[false,true,false,false],[true,false,true,false],[true,true,false,false]]},
@@ -933,4 +933,10 @@
 {as: [[false,true,true,true],[true,false,true,true],[true,true,false,true],[true,true,true,false],[true,true,true,true]], bs: [[false,false,false,true],[false,true,true,false],[true,false,true,false],[true,true,false,false]]},
 {as: [[false,true,true,true],[true,false,true,true],[true,true,false,true],[true,true,true,false],[true,true,true,true]], bs: [[false,false,true,true],[false,true,false,true],[true,false,true,false],[true,true,false,false]]},
 {as: [[true,true,true,false],[true,false,true,false],[true,false,true,true],[true,true,false,true],[false,true,true,true]], bs: [[true,true,false,false],[false,true,true,false],[false,false,false,true],[false,false,false,false]]}
-]
+];
+
+
+module.exports = {
+  // Adjust exports here
+  categoryExperiments: categoryExperiments
+}
