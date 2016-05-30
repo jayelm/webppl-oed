@@ -180,14 +180,15 @@ var prototypeGroup = groupify(prototypeSingle);
 var mFuncs = {exemplarGroup: exemplarGroup, prototypeGroup: prototypeGroup};
 
 // read the list of experiments to run from command line args
-var argv = minimist.call(null, process.argv);
+var argv = _.defaults(minimist.call(null, process.argv),
+                      {experimentRange: ''})
 var experimentRange = argv.experimentRange.split(',');
 var experimentsToRun = allExperiments.slice(experimentRange[0] - 1,
                                             experimentRange[1]);
 
 var dist = EIG({mNameSample: function() { uniformDraw(['exemplarGroup','prototypeGroup']) },
                 mFuncs: {exemplarGroup: exemplarGroup, prototypeGroup: prototypeGroup},
-                xSample: function() { uniformDraw(experimentsToRun) },
+                xSample: function() { uniformDraw([ms78, opt]) },
                 ySample: function() { return {n: 1, numAs: repeat(16, function() { return flip() ? 1 : 0 }) } },
                 infer: {
                     Y: function(g) { Enumerate(g) }
