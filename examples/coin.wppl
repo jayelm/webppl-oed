@@ -104,156 +104,180 @@ var biasSingle = cache(function(sequence) {
     })
 });
 
-var biasGroup = function(sequence, counts) {
-    var yDist = biasSingle(sequence);
-    var numHeads = counts[0],
-        numTails = counts[1];
-
+var groupify = function(m, n) {
+  var gm = function(sequence) {
+    var yDist = m(sequence);
     var p = Math.exp(score(yDist, true));
-
-    return score(Binomial({n: numHeads + numTails, p: p}), numHeads)
+    return Binomial({n: n, p: p})
+  }
+  return gm;
 }
 
+// var biasGroup = function(sequence, counts) {
+//     var yDist = biasSingle(sequence);
+//     var numHeads = counts[0],
+//         numTails = counts[1];
 
-var markovSingle = cache(function(sequence) {
-    Enumerate(function() {
-        var transitionProb = uniformDraw(coinWeights);
+//     var p = Math.exp(score(yDist, true));
 
-        var generateSequence = function(n, flipsSoFar) {
-            if (flipsSoFar.length == n) {
-                return flipsSoFar;
-            } else {
-                var lastFlip = last(flipsSoFar);
-                return generateSequence(n,
-                                        append(flipsSoFar,
-                                               flip(transitionProb) ? !lastFlip : lastFlip))
-            }
-        }
-        var firstCoin = flip();
-        var sampled = generateSequence(sequence.length, [firstCoin]);
-        condition(arraysEqual(sampled, sequence));
-        return flip( transitionProb ) ? !last(sampled) : last(sampled);
-    })
-});
-
-// DECIDE: x includes experiment setting AND measurement properties?
-// type is x -> y -> logp
-var markovGroup = function(sequence, counts) {
-    var yDist = markovSingle(sequence);
-    var numHeads = counts[0],
-        numTails = counts[1];
-
-    var n = numHeads + numTails;
-    var p = Math.exp(score(yDist, true));
-
-    return score(Binomial({n: n, p: p}), numHeads)
-}
+//     return score(Binomial({n: numHeads + numTails, p: p}), numHeads)
+// }
 
 
-// biasCoinN({sequence: [true,true,true,true], N: 1},
-//           [false])
+var biasGroup = groupify(biasSingle, 20);
 
+//Enumerate(function() { biasGroup([true,true,true,true]) })
 
-// TODO: add convenience method for converting a model of a single subject response to
-// multiple subject responses
+sample(biasGroup([true,true,true,true]))
 
-util.seedRNG(3);
+// var markovSingle = cache(function(sequence) {
+//     Enumerate(function() {
+//         var transitionProb = uniformDraw(coinWeights);
 
-// console.log('N,seq,eig\n')
-
-var empiricalCounts = [
-    [8,16], // hhhh
-    [4,16], // hhht
-    [6,16], // ...
-    [8,18],
-    [5,15],
-    [10,12],
-    [8,12],
-    [12,11],
-    [10,10],
-    [12,9],
-    [12,8],
-    [20,5],
-    [16,4],
-    [15,7],
-    [21,5],
-    [11,9]];
-
-var experiments = Enumerate(function() { repeat(4, flip)}).support().reverse();
-
-// NB: must run with webppl's binomial scoring approximation disabled
-// var dist = map2(
-//     function(data, experiment) {
-//         var N = sum(data);
-//         var mNameSample =function() { uniformDraw(['fairGroup', 'biasGroup']) };
-//         var mFuncs = {fairGroup: fairGroup, biasGroup: biasGroup, markovGroup: markovGroup};
-
-
-//         var eig = EIG({
-//             mNameSample: mNameSample,
-//             mFuncs: mFuncs,
-//             xSample: function() { experiment },
-//             ySample: function() { var numHeads = randomInteger(N + 1);
-//                                   return [numHeads, N - numHeads];
-//                                 },
-//             infer: {
-//                 Y: function(g) { Enumerate(g) }
+//         var generateSequence = function(n, flipsSoFar) {
+//             if (flipsSoFar.length == n) {
+//                 return flipsSoFar;
+//             } else {
+//                 var lastFlip = last(flipsSoFar);
+//                 return generateSequence(n,
+//                                         append(flipsSoFar,
+//                                                flip(transitionProb) ? !lastFlip : lastFlip))
 //             }
-
-//         }).support()[0].EIG;
-
-//         var aig = AIG({mNameSample: mNameSample,
-//                        mFuncs: mFuncs,
-//                        x: experiment,
-//                        y: data
-//                       });
-
-//         return {experiment: formatExperiment(experiment),
-//                 N: N,
-//                 eig: round(eig, 4),
-//                 aig: round(aig, 4)
-//                };
-//     },
-//     empiricalCounts,
-//     experiments);
-
-// console.table(dist)
-
-// 'R2 = ' + round(Math.pow(correlation(_.pluck(dist, 'eig'), _.pluck(dist, 'aig')), 2),
-//                 4)
-
-// var xs = Enumerate(function() { repeat(4, flip)}).support();
-
-// // in lexical graphical order
+//         }
+//         var firstCoin = flip();
+//         var sampled = generateSequence(sequence.length, [firstCoin]);
+//         condition(arraysEqual(sampled, sequence));
+//         return flip( transitionProb ) ? !last(sampled) : last(sampled);
+//     })
+// });
 
 
-var comparisons = {
-    'fair-bias': function() { uniformDraw(['fairGroup', 'biasGroup'])},
-    'bias-markov': function() { uniformDraw(['biasGroup', 'markovGroup'])},
-    'threeway': function() { uniformDraw(['fairGroup', 'biasGroup', 'markovGroup'])}
-};
 
-var mFuncs = {fairGroup: fairGroup, biasGroup: biasGroup, markovGroup: markovGroup};
+// OED({
+//   mNameSample: function() { return uniformDraw(['bias','markov']) },
+//   mFuncs: {bias: biasSingle, markov: markovSingle},
+//   xSample: function() { return repeat(4, flip) },
+//   ySample: function() { return flip() }
+// })
 
-console.log('comparison,sequence,eig')
-mapObject(function(comparisonName, mNameSample) {
-    var n = 20;
-    var supp = EIG({
-        mNameSample: mNameSample,
-        mFuncs: mFuncs,
-        xSample: function() { repeat(4,flip) },
-        ySample: function() { var numHeads = randomInteger(n + 1);
-                              return [numHeads, n - numHeads];
-                            }
-    }).support();
+// // DECIDE: x includes experiment setting AND measurement properties?
+// // type is x -> y -> logp
+// var markovGroup = function(sequence, counts) {
+//     var yDist = markovSingle(sequence);
+//     var numHeads = counts[0],
+//         numTails = counts[1];
 
-    var rowsFormatted = pam(supp, function(row) {
-        return {comparison: comparisonName,
-                experiment: formatExperiment(row.x),
-                eig: row.EIG}
-    })
+//     var n = numHeads + numTails;
+//     var p = Math.exp(score(yDist, true));
 
-    console.log(csvString(rowsFormatted))
+//     return score(Binomial({n: n, p: p}), numHeads)
+// }
 
-    return ''
-}, comparisons)
+
+// // biasCoinN({sequence: [true,true,true,true], N: 1},
+// //           [false])
+
+
+// // TODO: add convenience method for converting a model of a single subject response to
+// // multiple subject responses
+
+// util.seedRNG(3);
+
+// // console.log('N,seq,eig\n')
+
+// var empiricalCounts = [
+//     [8,16], // hhhh
+//     [4,16], // hhht
+//     [6,16], // ...
+//     [8,18],
+//     [5,15],
+//     [10,12],
+//     [8,12],
+//     [12,11],
+//     [10,10],
+//     [12,9],
+//     [12,8],
+//     [20,5],
+//     [16,4],
+//     [15,7],
+//     [21,5],
+//     [11,9]];
+
+// var experiments = Enumerate(function() { repeat(4, flip)}).support().reverse();
+
+// // NB: must run with webppl's binomial scoring approximation disabled
+// // var dist = map2(
+// //     function(data, experiment) {
+// //         var N = sum(data);
+// //         var mNameSample =function() { uniformDraw(['fairGroup', 'biasGroup']) };
+// //         var mFuncs = {fairGroup: fairGroup, biasGroup: biasGroup, markovGroup: markovGroup};
+
+
+// //         var eig = EIG({
+// //             mNameSample: mNameSample,
+// //             mFuncs: mFuncs,
+// //             xSample: function() { experiment },
+// //             ySample: function() { var numHeads = randomInteger(N + 1);
+// //                                   return [numHeads, N - numHeads];
+// //                                 },
+// //             infer: {
+// //                 Y: function(g) { Enumerate(g) }
+// //             }
+
+// //         }).support()[0].EIG;
+
+// //         var aig = AIG({mNameSample: mNameSample,
+// //                        mFuncs: mFuncs,
+// //                        x: experiment,
+// //                        y: data
+// //                       });
+
+// //         return {experiment: formatExperiment(experiment),
+// //                 N: N,
+// //                 eig: round(eig, 4),
+// //                 aig: round(aig, 4)
+// //                };
+// //     },
+// //     empiricalCounts,
+// //     experiments);
+
+// // console.table(dist)
+
+// // 'R2 = ' + round(Math.pow(correlation(_.pluck(dist, 'eig'), _.pluck(dist, 'aig')), 2),
+// //                 4)
+
+// // var xs = Enumerate(function() { repeat(4, flip)}).support();
+
+// // // in lexical graphical order
+
+
+// var comparisons = {
+//     'fair-bias': function() { uniformDraw(['fairGroup', 'biasGroup'])},
+//     'bias-markov': function() { uniformDraw(['biasGroup', 'markovGroup'])},
+//     'threeway': function() { uniformDraw(['fairGroup', 'biasGroup', 'markovGroup'])}
+// };
+
+// var mFuncs = {fairGroup: fairGroup, biasGroup: biasGroup, markovGroup: markovGroup};
+
+// console.log('comparison,sequence,eig')
+// mapObject(function(comparisonName, mNameSample) {
+//     var n = 20;
+//     var supp = EIG({
+//         mNameSample: mNameSample,
+//         mFuncs: mFuncs,
+//         xSample: function() { repeat(4,flip) },
+//         ySample: function() { var numHeads = randomInteger(n + 1);
+//                               return [numHeads, n - numHeads];
+//                             }
+//     }).support();
+
+//     var rowsFormatted = pam(supp, function(row) {
+//         return {comparison: comparisonName,
+//                 experiment: formatExperiment(row.x),
+//                 eig: row.EIG}
+//     })
+
+//     console.log(csvString(rowsFormatted))
+
+//     return ''
+// }, comparisons)
