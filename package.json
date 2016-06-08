@@ -1,5 +1,6 @@
 {
     "name": "webppl-oed",
+    "version": "0.0.1",
     "webppl": {
         "wppl": [
             "src/oed.wppl"
