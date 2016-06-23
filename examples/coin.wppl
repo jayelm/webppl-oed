@@ -1,5 +1,3 @@
-var _ = underscore;
-
 var correlation = function(xs, ys) {
     var mx = sum(xs)/xs.length,
         my = sum(ys)/ys.length;
