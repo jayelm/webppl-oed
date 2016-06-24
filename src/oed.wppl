@@ -25,6 +25,9 @@ var variance = function(erp) {
             erp.support()))
 }
 
+// TODO: using this on priors and posteriors Just Works when the supports
+// are {name: ..., func: ...} objects, which is a little surprising
+// figure out why this works
 var KL = function(P, Q) {
     var statesP = P.support();
     var statesQ = Q.support();
@@ -42,22 +45,21 @@ var KL = function(P, Q) {
 
 // compute actual information gain
 var AIG = function(args) {
-    var mNameSample = args.mNameSample,
-        mFuncs = args.mFuncs,
+    var M = args.M,
         x = args.x,
         y = args.y;
 
     var mPrior = Enumerate(function() {
-        return mNameSample()
+        var m = M();
+        return {name: m.name, func: m};
     });
 
     var mPosterior = Enumerate(function() {
-        var mName = mNameSample(), m = mFuncs[mName];
-        var LL = m(x,y);
+        var mData = sample(mPrior), mName = mData.name, mFunc = mData.func;
+        var LL = mFunc(x,y);
         factor(LL);
-        return mName;
+        return mData;
     });
-    //console.log(util.serialize(mPosterior))
 
     return KL(mPosterior, mPrior);
 }
@@ -65,34 +67,37 @@ var AIG = function(args) {
 
 // notes: doesn't seem to work with incrementalMH right now
 var EIG = function(args) {
-    var mSample = args.mSample, xSample = args.xSample, ySample = args.ySample,
-        mNameSample = args.mNameSample;
+    var M = args.M, X = args.X, Y = args.Y;
     // example: could use MH for M1 but then enumerate for M2
     var infer = args.infer || {},
-        inferX = infer.X || Enumerate,
-        inferY = infer.Y || Enumerate,
-        inferM1 = infer.M1 || Enumerate,
-        inferM2 = infer.M2 || Enumerate,
-        mFuncs = args.mFuncs;
+    inferX = infer.X || Enumerate,
+    inferY = infer.Y || Enumerate,
+    inferM1 = infer.M1 || Enumerate,
+    inferM2 = infer.M2 || Enumerate,
+    mFuncs = args.mFuncs;
 
     var mPrior = inferM1(function() {
-        return mNameSample()
+        var m = M();
+        return {name: m.name, func: m}
     });
 
     inferX(function() {
-        var x = xSample();
+        var x = X();
         // wrt the above distribution on responses, what is the posterior distribution on models?
         var KLDist = inferY(function() {
-          //var mName = mNameSample(), m = mFuncs[mName];
-          var y = ySample();
-          //var scoreY = m(x,y);
-          //factor(scoreY);
+
+            var y = Y();
+
+            // TODO: stuff for predictive y
+            //var _m = sample(mPrior), mName: _m.name, mFunc = _m.func
+            //var scoreY = mFunc(x,y);
+            //factor(scoreY);
 
             var mPosterior = inferM2(function() {
-                var m2Name = mNameSample(), m2 = mFuncs[m2Name];
-                var ll = m2(x,y);
+                var _m2 = sample(mPrior), m2Name = _m2.name, m2Func = _m2.func;
+                var ll = m2Func(x,y);
                 factor(ll);
-                return m2Name
+                return _m2;
             });
             var kl = KL(mPosterior, mPrior);
             return kl;
