@@ -47,12 +47,16 @@ var AIG = function(args) {
         x = args.x,
         y = args.y;
 
-    // TODO: make inference an argument here
-    var mPrior = Enumerate(function() {
+    var infer = args.infer || {},
+        // No inferX or inferY since data is given
+        inferM1 = infer.M1 || Enumerate,
+        inferM2 = infer.M2 || Enumerate;
+
+    var mPrior = inferM1(function() {
         return mNameSample()
     });
 
-    var mPosterior = Enumerate(function() {
+    var mPosterior = inferM2(function() {
         var mName = mNameSample(), m = mFuncs[mName];
         var LL = m(x,y);
         factor(LL);
