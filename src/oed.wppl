@@ -117,6 +117,49 @@ var EIG = function(args) {
 
 var OED = EIG;
 
+// compute actual information gain
+var SequentialAIG = function(args) {
+    var mNameSample = args.mNameSample,
+        mFuncs = args.mFuncs,
+        // Note these need to be lists of stimuli
+        xs = args.xs,
+        ys = args.ys;
+
+    // We don't use inferX or inferY, since X and Y are given
+    var infer = args.infer || {},
+        inferM1 = infer.M1 || Enumerate,
+        inferM2 = infer.M2 || Enumerate;
+
+
+    // TODO: make inference an argument here
+    var mPrior = inferM1(function() {
+        return mNameSample();
+    });
+
+    var mPosterior = reduce(function(trial, currDist) {
+        var x = trial[0];
+        var y = trial[1];
+        // The model sampling function according to the current distribution
+        var currSample = function() {
+            return sample(currDist);
+        };
+
+        // Now compute posterior given exp x, resp y
+        var updatedDist = inferM2(function() {
+            var mName = currSample();
+            var m = mFuncs[mName];
+            var ll = m(x, y);
+            factor(ll);
+            return mName;
+        });
+
+        return updatedDist;
+    }, mPrior, zip(xs, ys));
+
+    var kl = KL(mPosterior, mPrior);
+    return kl;
+};
+
 var SequentialEIG = function(args) {
     var mSample = args.mSample, xSample = args.xSample, ySample = args.ySample,
         mNameSample = args.mNameSample;
@@ -136,22 +179,22 @@ var SequentialEIG = function(args) {
     });
 
     inferX(function() {
-        // Will end up enumerating all possible combinations here
-        // TODO: Could sample a list
-        // var xs = repeat(i, xSample)
-        // Then sample a list of ys
-        // Need to find a way to recursively repeat the mPosterior update
         var xs = repeat(seq, xSample);
-        // wrt the above distribution on responses, what is the posterior distribution on models?
+
         var KLDist = inferY(function() {
             var ys = repeat(seq, ySample);
 
+            // TODO: Do I do an "each", factoring by each model score?
+            // Or do I need to factor via predictive Y as I update the model
+            // posterior?
             // if (args.usePredictiveY) {
                 // var mName = mNameSample(), m = mFuncs[mName];
                 // var scoreY = m(x,y);
                 // factor(scoreY);
             // }
 
+            // FIXME: When AIG accepts a model prior argument, update
+            // SequentialAIG to do so too, and instead defer to AIG here
             var mPosterior = reduce(function(trial, currDist) {
                 var x = trial[0];
                 var y = trial[1];
@@ -171,8 +214,6 @@ var SequentialEIG = function(args) {
 
                 return updatedDist;
             }, mPrior, zip(xs, ys));
-            // console.log("mPosterior2");
-            // console.log(mPosterior2);
 
             var kl = KL(mPosterior, mPrior);
             return kl;
@@ -183,6 +224,5 @@ var SequentialEIG = function(args) {
         factor(EIG);
         var VIG = variance(KLDist);
         return {x: xs, EIG: EIG, VIG: VIG};
-        // return {x: [x, x2], EIG: EIG};
     });
 };
