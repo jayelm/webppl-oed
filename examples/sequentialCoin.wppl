@@ -103,3 +103,16 @@ var args = {
 };
 
 console.log(SequentialEIG(args));
+
+// console.log(SequentialAIG({
+    // mNameSample: function() {
+        // return uniformDraw(['biasGroup', 'fairGroup', 'markovGroup']);
+    // },
+    // mFuncs: {
+        // biasGroup: biasGroup,
+        // fairGroup: fairGroup,
+        // markovGroup: markovGroup
+    // },
+    // xs: repeat(3, function() {[true, true, true, true]}),
+    // ys: [[20, 0], [18, 2], [19, 1]]
+// }));
