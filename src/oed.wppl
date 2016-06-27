@@ -66,36 +66,6 @@ var AIG = function(args) {
 
     return KL(mPosterior, mPrior);
 }
-
-var updateModelPosterior = function(args) {
-    var mNameSample = args.mNameSample,
-        mFuncs = args.mFuncs,
-        x = args.x,
-        y = args.y;
-
-    var infer = args.infer || {},
-        // No inferX or inferY since data is given
-        inferM1 = infer.M1 || Enumerate,
-        inferM2 = infer.M2 || Enumerate;
-
-    var mPrior = inferM1(function() {
-        return mNameSample()
-    });
-
-    var mPosterior = inferM2(function() {
-        var mName = mNameSample(), m = mFuncs[mName];
-        var LL = m(x,y);
-        factor(LL);
-        return mName;
-    });
-    //console.log(util.serialize(mPosterior))
-
-    return {
-        mPosterior: mPosterior,
-        AIG: KL(mPosterior, mPrior)
-    };
-};
-
 // notes: doesn't seem to work with incrementalMH right now
 var EIG = function(args) {
     var M = args.M, X = args.X, Y = args.Y;
@@ -108,10 +78,14 @@ var EIG = function(args) {
         mFuncs = args.mFuncs,
         usePredictiveY = !!args.usePredictiveY;
 
-    var mPrior = inferM1(function() {
+    var mPrior = args.mPrior || inferM1(function() {
         var m = M();
         return {name: m.name, func: m}
     });
+
+    var mNameSample = args.mNameSample || function() {
+        return sample(mPrior);
+    };
 
     inferX(function() {
         var x = X();
@@ -254,37 +228,49 @@ var SequentialEIG = function(args) {
     });
 };
 
-var adaptiveEigPrompt = {
-    name: 'exptResult',
-    message: 'Enter experiment reuslt as JSON'
+var updatePosterior = function(args) {
+    var mFuncs = args.mFuncs,
+        x = args.x,
+        y = args.y;
+
+    var infer = args.infer || {},
+        // No inferX or inferY since data is given
+        inferM1 = infer.M1 || Enumerate,
+        inferM2 = infer.M2 || Enumerate;
+
+    var mPrior = args.mPrior || inferM1(function() {
+        return mNameSample();
+    });
+
+    var mNameSample = args.mNameSample || function() {
+        return sample(mPrior);
+    };
+
+    var mPosterior = inferM2(function() {
+        var mName = mNameSample(), m = mFuncs[mName];
+        var LL = m(x,y);
+        factor(LL);
+        return mName;
+    });
+    //console.log(util.serialize(mPosterior))
+
+    return {
+        mPosterior: mPosterior,
+        AIG: KL(mPosterior, mPrior)
+    };
 };
 
-var AdaptiveEIG = function(args) {
-    // var mSample = args.mSample, xSample = args.xSample, ySample = args.ySample,
-        // mNameSample = args.mNameSample;
-
-    // var infer = args.infer || {},
-        // inferX = infer.X || Enumerate,
-        // inferY = infer.Y || Enumerate,
-        // inferM1 = infer.M1 || Enumerate,
-        // inferM2 = infer.M2 || Enumerate,
-        // mFuncs = args.mFuncs,
-        // usePredictiveY = !!args.usePredictiveY;
-
-    // TODO: Pass in model prior as an argument to prevent having to recompute
-    var EIGDist = EIG(args);
+var maxEIG = function(args) {
+    // Return the experiment with the maximum EIG.
+    // Args should have a mPrior instead of mNameSample to save computation
+    // time.
+    var EIGdist = EIG(args);
 
     // Get the experiment with the max EIG
-    var maxExperiment = reduce(function(expt, currMax) {
+    return reduce(function(expt, currMax) {
         if (expt.EIG > currMax.EIG) {
             return expt;
         }
         return currMax;
-    }, {x: null, EIG: 0}, EIGDist.support());
-
-    // console.log("Best experiment is...");
-    // console.log(maxExperiment.x);
-    // console.log('EIG is ' + maxExperiment.EIG);
-
-    maxExperiment
+    }, {x: null, EIG: 0}, EIGdist.support());
 };
