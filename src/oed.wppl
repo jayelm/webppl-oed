@@ -223,8 +223,9 @@ var SequentialEIG = function(args) {
         // is there a way of getting confidence intervals around eig?
         var EIG = expectation(KLDist);
         factor(EIG);
-        var VIG = variance(KLDist);
-        return {x: xs, EIG: EIG, VIG: VIG};
+        // var VIG = variance(KLDist);
+        // return {x: xs, EIG: EIG, VIG: VIG};
+        return {x: xs, EIG: EIG, KLDist: KLDist};
     });
 };
 
@@ -252,7 +253,6 @@ var updatePosterior = function(args) {
         factor(LL);
         return mName;
     });
-    //console.log(util.serialize(mPosterior))
 
     return {
         mPosterior: mPosterior,
