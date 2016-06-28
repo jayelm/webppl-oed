@@ -78,10 +78,14 @@ var EIG = function(args) {
         mFuncs = args.mFuncs,
         usePredictiveY = !!args.usePredictiveY;
 
-    var mPrior = args.mPrior || inferM1(function() {
-        var m = M();
-        return {name: m.name, func: m}
-    });
+    // For some reason, I can't refer to args.mNameSample when calling?
+    var mPrior = args.mPrior || (function() {
+        var M = args.M;
+        return inferM1(function() {
+            var m = M();
+            return {name: m.name, func: m};
+        });
+    })();
 
     var mNameSample = args.mNameSample || function() {
         return sample(mPrior);
@@ -128,9 +132,12 @@ var updatePosterior = function(args) {
         inferM1 = infer.M1 || Enumerate,
         inferM2 = infer.M2 || Enumerate;
 
-    var mPrior = args.mPrior || inferM1(function() {
-        return args.mNameSample();
-    });
+    var mPrior = args.mPrior || (function() {
+        var mNamesample = args.mNameSample;
+        return inferM1(function() {
+            return mNameSample();
+        });
+    })();
 
     var mNameSample = args.mNameSample || function() {
         return sample(mPrior);
