@@ -18,6 +18,15 @@ var expectation = function(erp) {
             erp.support()))
 }
 
+// This does not assume numerical support values. It can accept any object as
+// long as it has a 'val' field from which the expectation will be computed.
+// This allows including additional information in the return values of a
+// computation
+var expectation2 = function(erp) {
+    sum(map(function(state) { return exp(score(erp, state)) * state.val },
+            erp.support()))
+}
+
 var variance = function(erp) {
     var mean = expectation(erp)
 
@@ -108,11 +117,12 @@ var EIG = function(args) {
                 return _m2;
             });
             var kl = KL(mPosterior, mPrior);
-            return kl;
+            return {y: y, val: kl};
         });
 
         // is there a way of getting confidence intervals around eig?
-        var EIG = expectation(KLDist);
+        // Note expectation2 since our return values from inferY are objects
+        var EIG = expectation2(KLDist);
         factor(EIG);
         // var VIG = variance(KLDist);
         // return {x: x, EIG: EIG, VIG: VIG}
