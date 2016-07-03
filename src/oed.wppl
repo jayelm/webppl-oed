@@ -50,7 +50,7 @@ var AIG = function(args) {
         y = args.y;
 
     var infer = args.infer || {};
-    var inferM1 = infer.M1 || Enumerate,
+    var inferM1 = infer.M1 || Enumerate;
     var inferM2 = infer.M2 || Enumerate;
     var mPrior = inferM1(function() {
         var m = M();
