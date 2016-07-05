@@ -129,7 +129,7 @@ var updatePosterior = function(args) {
         inferM2 = infer.M2 || Enumerate;
 
     var mPrior = args.mPrior || inferM1(function() {
-        return mNameSample();
+        return args.mNameSample();
     });
 
     var mNameSample = args.mNameSample || function() {
