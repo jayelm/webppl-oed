@@ -98,5 +98,5 @@ AIG({
 // EIG({
 //     M: function() { uniformDraw([fairGroup, biasGroup]) },
 //     X: function() { return {n: 20, sequence: repeat(4, flip) } },
-//     Y: function() { randomInteger(20)+1 }
+//     Y: function() { randomInteger(20 + 1) }
 // })
