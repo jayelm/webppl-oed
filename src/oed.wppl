@@ -104,6 +104,8 @@ var EIG = function(args) {
         var x = X();
         // wrt the above distribution on responses, what is the posterior distribution on models?
         var KLDist = inferY(function() {
+            // TODO: What happens if you sample from the updated prior - does
+            // this mix ySample and predictiveY?
             var y = Y();
             if (args.usePredictiveY) {
                 var _m = sample(mPrior), mName = _m.name, mFunc = _m.func;
