@@ -25,6 +25,18 @@ var variance = function(erp) {
             erp.support()))
 }
 
+var Model = function(name, thunk) {
+    Object.defineProperty(thunk, 'name', {value: name})
+    return thunk;
+};
+
+// Given a name: thunk object, Models will name each function
+var Models = function(obj) {
+    return map(function(key) {
+        return Model(key, obj[key]);
+    }, Object.keys(obj));
+};
+
 // TODO: using this on priors and posteriors Just Works when the supports
 // are {name: ..., func: ...} objects, which is a little surprising
 // figure out why this works
