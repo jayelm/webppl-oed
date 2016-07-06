@@ -87,18 +87,13 @@ var EIG = function(args) {
         mFuncs = args.mFuncs,
         usePredictiveY = !!args.usePredictiveY;
 
-    // For some reason, I can't refer to args.mNameSample when calling?
-    var mPrior = args.mPrior || (function() {
-        var M = args.M;
-        return inferM1(function() {
-            var m = M();
-            return {name: m.name, func: m};
-        });
-    })();
-
-    var mNameSample = args.mNameSample || function() {
-        return sample(mPrior);
-    };
+    // Construct mPrior either 1) if it's provided in args, or 2) from the
+    // model sample function. Note that args.mPrior overrides args.M if both
+    // are present
+    var mPrior = args.mPrior || inferM1(function() {
+        var m = M();
+        return {name: m.name, func: m};
+    });
 
     inferX(function() {
         var x = X();
@@ -135,7 +130,7 @@ var EIG = function(args) {
 var OED = EIG;
 
 var updatePosterior = function(args) {
-    var mFuncs = args.mFuncs,
+    var M = args.M,
         x = args.x,
         y = args.y;
 
@@ -144,41 +139,20 @@ var updatePosterior = function(args) {
         inferM1 = infer.M1 || Enumerate,
         inferM2 = infer.M2 || Enumerate;
 
-    var mPrior = args.mPrior || (function() {
-        var mNamesample = args.mNameSample;
-        return inferM1(function() {
-            return mNameSample();
-        });
-    })();
-
-    var mNameSample = args.mNameSample || function() {
-        return sample(mPrior);
-    };
+    var mPrior = args.mPrior || inferM1(function() {
+        var m = M();
+        return {name: m.name, func: m};
+    });
 
     var mPosterior = inferM2(function() {
-        var mName = mNameSample(), m = mFuncs[mName];
-        var LL = m(x,y);
+        var mData = sample(mPrior), mName = mData.name, mFunc = mData.func;
+        var LL = mFunc(x,y);
         factor(LL);
-        return mName;
+        return mData;
     });
 
     return {
         mPosterior: mPosterior,
         AIG: KL(mPosterior, mPrior)
     };
-};
-
-var maxEIG = function(args) {
-    // Return the experiment with the maximum EIG.
-    // Args should have a mPrior instead of mNameSample to save computation
-    // time.
-    var EIGdist = EIG(args);
-
-    // Get the experiment with the max EIG
-    return reduce(function(expt, currMax) {
-        if (expt.EIG > currMax.EIG) {
-            return expt;
-        }
-        return currMax;
-    }, {x: null, EIG: 0}, EIGdist.support());
 };
