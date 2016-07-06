@@ -87,6 +87,7 @@ var AIG = function(args) {
 
     return KL(mPosterior, mPrior);
 }
+
 // notes: doesn't seem to work with incrementalMH right now
 var EIG = function(args) {
     var M = args.M, X = args.X, Y = args.Y;
@@ -97,7 +98,8 @@ var EIG = function(args) {
         inferM1 = infer.M1 || Enumerate,
         inferM2 = infer.M2 || Enumerate,
         mFuncs = args.mFuncs,
-        usePredictiveY = !!args.usePredictiveY;
+        usePredictiveY = !!args.usePredictiveY,
+        returnKL = !!args.returnKL;
 
     // Construct mPrior either 1) if it's provided in args, or 2) from the
     // model sample function. Note that args.mPrior overrides args.M if both
@@ -111,8 +113,6 @@ var EIG = function(args) {
         var x = X();
         // wrt the above distribution on responses, what is the posterior distribution on models?
         var KLDist = inferY(function() {
-            // TODO: What happens if you sample from the updated prior - does
-            // this mix ySample and predictiveY?
             var y = Y();
             if (args.usePredictiveY) {
                 var _m = sample(mPrior), mName = _m.name, mFunc = _m.func;
@@ -126,16 +126,15 @@ var EIG = function(args) {
                 return _m2;
             });
             var kl = KL(mPosterior, mPrior);
-            return {y: y, val: kl};
+            return (returnKL) ? {y: y, val: kl} : kl;
         });
 
         // is there a way of getting confidence intervals around eig?
-        // Note expectation2 since our return values from inferY are objects
-        var EIG = expectation2(KLDist);
+        var EIG = (returnKL) ? expectation2(KLDist) : expectation(KLDist);
         factor(EIG);
         // var VIG = variance(KLDist);
         // return {x: x, EIG: EIG, VIG: VIG}
-        return {x: x, EIG: EIG, KLDist: KLDist}
+        return (returnKL) ? {x: x, EIG: EIG, KLDist: KLDist} : {x: x, EIG: EIG}
     })
 }
 
