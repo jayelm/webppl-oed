@@ -31,7 +31,23 @@ var arraysEqual = function(as,bs) {
     return all(idF, map2(function(a, b) { return a === b }, as, bs))
 }
 
-var markovCoin = function(sequence) {
+// TODO: in webppl, make sure cache() preserves names
+var fairSingle = Model('fairSingle', cache(function(sequence) {
+    Enumerate(function() {
+        return flip()
+    })
+}));
+
+var biasSingle = Model('biasSingle', cache(function(sequence) {
+    Enumerate(function() {
+        var p = uniformDraw(coinWeights);
+        var sampled = repeat(sequence.length, function() { flip(p) })
+        condition(arraysEqual(sampled, sequence))
+        return flip(p);
+    })
+}));
+
+var markovSingle = Model('markovSingle', function(sequence) {
     Enumerate(function(){
         var transitionProb = uniformDraw(coinWeights);
         var generateSequence = function(n, flipsSoFar) {
@@ -51,24 +67,7 @@ var markovCoin = function(sequence) {
 
         return flip(transitionProb) ? !last(sampled) : last(sampled);
     })
-}
-
-
-// TODO: in webppl, make sure cache() preserves names
-var fairSingle = Model('fairSingle', cache(function(sequence) {
-    Enumerate(function() {
-        return flip()
-    })
-}));
-
-var biasSingle = Model('biasSingle', cache(function(sequence) {
-    Enumerate(function() {
-        var p = uniformDraw(coinWeights);
-        var sampled = repeat(sequence.length, function() { flip(p) })
-        condition(arraysEqual(sampled, sequence))
-        return flip(p);
-    })
-}));
+});
 
 var groupify = function(m) {
     // maybe discriminative m should be of type ((x -> y) -> R) ?
@@ -83,17 +82,21 @@ var groupify = function(m) {
 
 var fairGroup = groupify(fairSingle);
 var biasGroup = groupify(biasSingle);
+var markovGroup = groupify(markovSingle);
 
-//sample(biasGroup({n: 20, sequence: [true,true,true,true] }))
+var nullGroup = Model('nullGroup', function(x, y) {
+    // Ignore x, return equal probability for all y in the possible repsonses range
+    return RandomInteger({n: 20 + 1}).score(y);
+});
 
 AIG({
-    M: function() { uniformDraw([fairGroup, biasGroup]) },
+    M: function() { uniformDraw([fairGroup, biasGroup, markovGroup]) },
     x: {n: 20, sequence: [true,false,false,true]},
     y: 3
 })
 
 // EIG({
-//     M: function() { uniformDraw([fairGroup, biasGroup]) },
-//     X: function() { return {n: 20, sequence: repeat(4, flip) } },
-//     Y: function() { randomInteger(20 + 1) }
+    // M: function() { uniformDraw([fairGroup, biasGroup, markovGroup, nullGroup]) },
+    // X: function() { return {n: 20, sequence: repeat(4, flip) } },
+    // Y: function() { randomInteger(20 + 1) }
 // })
