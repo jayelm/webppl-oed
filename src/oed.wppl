@@ -64,15 +64,15 @@ var KL = function(P, Q) {
         statesP));
 }
 
-// compute actual information gain
-var AIG = function(args) {
+var updatePosterior = function(args) {
     var M = args.M,
         x = args.x,
         y = args.y;
 
-    var infer = args.infer || {};
-    var inferM1 = infer.M1 || Enumerate;
-    var inferM2 = infer.M2 || Enumerate;
+    var infer = args.infer || {},
+        inferM1 = infer.M1 || Enumerate,
+        inferM2 = infer.M2 || Enumerate;
+
     var mPrior = args.mPrior || inferM1(function() {
         var m = M();
         return {name: m.name, func: m};
@@ -85,8 +85,16 @@ var AIG = function(args) {
         return mData;
     });
 
-    return KL(mPosterior, mPrior);
-}
+    return {
+        mPosterior: mPosterior,
+        AIG: KL(mPosterior, mPrior)
+    };
+};
+
+// compute actual information gain
+var AIG = function(args) {
+    return updatePosterior(args).AIG;
+};
 
 // notes: doesn't seem to work with incrementalMH right now
 var EIG = function(args) {
@@ -139,31 +147,3 @@ var EIG = function(args) {
 }
 
 var OED = EIG;
-
-var updatePosterior = function(args) {
-    var M = args.M,
-        x = args.x,
-        y = args.y;
-
-    var infer = args.infer || {},
-        // No inferX or inferY since data is given
-        inferM1 = infer.M1 || Enumerate,
-        inferM2 = infer.M2 || Enumerate;
-
-    var mPrior = args.mPrior || inferM1(function() {
-        var m = M();
-        return {name: m.name, func: m};
-    });
-
-    var mPosterior = inferM2(function() {
-        var mData = sample(mPrior), mName = mData.name, mFunc = mData.func;
-        var LL = mFunc(x,y);
-        factor(LL);
-        return mData;
-    });
-
-    return {
-        mPosterior: mPosterior,
-        AIG: KL(mPosterior, mPrior)
-    };
-};
