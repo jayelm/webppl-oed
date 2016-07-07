@@ -46,6 +46,12 @@ var Models = function(obj) {
     }, Object.keys(obj));
 };
 
+var getBestExpt = function(expts) {
+    return reduce(function(expt, currMax) {
+        return (expt.EIG > currMax.EIG) ? expt : currMax;
+    }, {x: null, EIG: -Infinity}, expts);
+};
+
 // TODO: using this on priors and posteriors Just Works when the supports
 // are {name: ..., func: ...} objects, which is a little surprising
 // figure out why this works

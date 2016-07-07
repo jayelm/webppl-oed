@@ -89,14 +89,17 @@ var nullGroup = Model('nullGroup', function(x, y) {
     return RandomInteger({n: 20 + 1}).score(y);
 });
 
-AIG({
-    M: function() { uniformDraw([fairGroup, biasGroup, markovGroup]) },
-    x: {n: 20, sequence: [true,false,false,true]},
-    y: 3
-})
-
-// EIG({
-    // M: function() { uniformDraw([fairGroup, biasGroup, markovGroup, nullGroup]) },
-    // X: function() { return {n: 20, sequence: repeat(4, flip) } },
-    // Y: function() { randomInteger(20 + 1) }
+// AIG({
+    // M: function() { uniformDraw([fairGroup, biasGroup, markovGroup]) },
+    // x: {n: 20, sequence: [true,false,false,true]},
+    // y: 3
 // })
+
+var EIGdist = EIG({
+    M: function() { uniformDraw([fairGroup, biasGroup, markovGroup, nullGroup]) },
+    X: function() { return {n: 20, sequence: repeat(4, flip) } },
+    Y: function() { randomInteger(20 + 1) }
+});
+
+console.log(EIGdist);
+getBestExpt(EIGdist.support());
