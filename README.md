@@ -93,13 +93,16 @@ var models = Models({
 
 `OED` accepts an `args` argument with 3 required properties: the model sampling
 function `M`, the experiment sampling function `X`, and the response sampling
-function `Y`. These functions must take no arguments, and return a randomly
-sampled single item from the corresponding search space. Even if your search
-spaces are easily enumerable, you must specify the functions as a sample from
-that space, and `OED` will enumerate it. Usually, your prior on `M`, `X`, and
-`Y` will be uniform: as a result, your sampling function should produce each
-model/experiment/response with equal probability (e.g. via `uniformDraw` or
-`flip`).
+function `Y`.
+
+`M` and `X` should take no arguments, but the response prior `Y` can
+(optionally) be a function of a sampled experiment `x`, if you have different
+dependent measures in the experiment space (see [Multiple dependent
+measures](#multipledependentmeasures)). `M`, `X`, and `Y` should, when called,
+return a sampled item from the corresponding space. Usually, your prior on `M`,
+`X`, and `Y` will be uniform: as a result, your sampling function should
+produce each model/experiment/response with equal probability (e.g. via
+`uniformDraw` or `flip`).
 
 > New: instead of specifying a model sampling function e.g. `M`, you can
 > specify a model prior, `mPrior`, which will override `M`. You should
@@ -127,7 +130,7 @@ OED({
     M: function() { uniformDraw([m1, m2, ...]) }, // Sampling from model prior
     mPrior: Marginal({ ... }), // Optional: specify a concrete model prior
     X: function() { randomInteger(21) }, // Sampling from experiment prior
-    Y: function() { randomInteger(21) }, // Sampling from response prior
+    Y: function(x) { randomInteger(21) }, // Sampling from response prior.
     infer: {
         M1: Enumerate, // Inference for model prior
         M2: Enumerate, // Inference for model posterior
@@ -162,6 +165,59 @@ If you are interested in the best experiment, use the utility function
 `getBestExpt`, described later.
 
 > Note that `OED` is an alias for `EIG`.
+
+#### Multiple dependent measures
+
+If your experiment space contains qualitatively different experiments (i.e.
+dependent measures [DMs]), you can update your response space for each experiment by
+having `Y` accept a sampled experiment. In order to have `Y` behave differently
+for different DMs `x`, `X` should return an experiment with some kind of
+distinguishing attribute (e.g. an object with a `type` property). As an
+example, consider two kinds of experiments you could run, a "categorical"
+experiment for which participants answer yes/no, and a "continuous" experiment
+where participants return a number in the interval [0, 1]:
+
+```javascript
+var X = function() {
+    var type = uniformDraw(['categorical', 'continuous']);
+    // Sample a categorical or continuous experiment
+    var data = (type === 'categorical') ?
+        sampleCategorical() : sampleContinuous();
+    return {
+        type: type,
+        data: data
+    };
+};
+
+var Y = function(x) {
+    if (x.type === 'categorical') {
+        // e.g. a "true or false" response
+        return flip();
+    } else {
+        // e.g. a response on the interval [0, 1]
+        return sample(Uniform({a: 0, b: 1}));
+    }
+};
+```
+
+*Similarly*, your model functions should return different scores depending on
+the experiment type:
+
+```javascript
+var M = function(x, y) {
+    if (x.type === 'categorical') {
+        // Score y response assuming y is either true or false
+    } else {
+        // Score y response assuming y is a number in [0, 1]
+    }
+};
+```
+
+This allows EIG to be calculated independently using the different samples.
+
+If you do *not* have multiple dependent measures, then you may simply ignore
+the single argument `x` of `Y`, or, since JavaScript is not very strict, omit
+the parameter altogether.
 
 ### AIG
 
