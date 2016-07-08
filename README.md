@@ -1,27 +1,25 @@
 # webppl-oed
 Optimal Experiment Design for WebPPL models
 
-## Table of Contents
-
-  * [webppl-oed](#webppl-oed)
-    * [Dependencies](#dependencies)
-    * [Usage](#usage)
-      * [Models](#models)
-        * [Specification](#specification)
-        * [Implementation](#implementation)
-      * [OED/EIG](#oedeig)
-        * [Usage](#usage-1)
-        * [Returns](#returns)
-      * [AIG](#aig)
-        * [Usage](#usage-2)
-        * [Returns](#returns-1)
-      * [updatePosterior](#updateposterior)
-        * [Usage](#usage-3)
-        * [Returns](#returns-2)
-      * [getBestExpt](#getbestexpt)
-        * [Usage](#usage-4)
-        * [Returns](#returns-3)
-    * [Examples](#examples)
+* [Dependencies](#dependencies)
+* [Usage](#usage)
+  * [Models](#models)
+	* [Specification](#specification)
+	* [Implementation](#implementation)
+  * [OED/EIG](#oedeig)
+	* [Usage](#usage-1)
+	* [Returns](#returns)
+	* [Multiple dependent measures](#multiple-dependent-measures)
+  * [AIG](#aig)
+	* [Usage](#usage-2)
+	* [Returns](#returns-1)
+  * [updatePosterior](#updateposterior)
+	* [Usage](#usage-3)
+	* [Returns](#returns-2)
+  * [getBestExpt](#getbestexpt)
+	* [Usage](#usage-4)
+	* [Returns](#returns-3)
+* [Examples](#examples)
 
 ## Dependencies
 
@@ -98,7 +96,7 @@ function `Y`.
 `M` and `X` should take no arguments, but the response prior `Y` can
 (optionally) be a function of a sampled experiment `x`, if you have different
 dependent measures in the experiment space (see [Multiple dependent
-measures](#multipledependentmeasures)). `M`, `X`, and `Y` should, when called,
+measures](#multiple-dependent-measures)). `M`, `X`, and `Y` should, when called,
 return a sampled item from the corresponding space. Usually, your prior on `M`,
 `X`, and `Y` will be uniform: as a result, your sampling function should
 produce each model/experiment/response with equal probability (e.g. via
