@@ -133,6 +133,8 @@ var EIG = function(args) {
                 var scoreY = mFunc(x,y);
                 factor(scoreY);
             }
+            // TODO: For OED with discrete responses y, return mPosteriors
+            // in EIG to prevent recomputing during updatePosterior?
             var mPosterior = inferM2(function() {
                 var _m2 = sample(mPrior), m2Name = _m2.name, m2Func = _m2.func;
                 var ll = m2Func(x,y);
@@ -140,11 +142,11 @@ var EIG = function(args) {
                 return _m2;
             });
             var kl = KL(mPosterior, mPrior);
-            return (returnKL) ? {y: y, val: kl} : kl;
+            return {y: y, val: kl};
         });
 
         // is there a way of getting confidence intervals around eig?
-        var EIG = (returnKL) ? expectation2(KLDist) : expectation(KLDist);
+        var EIG = expectation2(KLDist);
         factor(EIG);
         // var VIG = variance(KLDist);
         // return {x: x, EIG: EIG, VIG: VIG}
