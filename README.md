@@ -129,11 +129,11 @@ OED({
     X: function() { randomInteger(21) }, // Sampling from experiment prior
     Y: function() { randomInteger(21) }, // Sampling from response prior
     infer: {
-        inferM1: Enumerate, // Inference for model prior
-        inferM2: Enumerate, // Inference for model posterior
-        inferX: Enumerate, // Inference for experiments prior
+        M1: Enumerate, // Inference for model prior
+        M2: Enumerate, // Inference for model posterior
+        X: Enumerate, // Inference for experiments prior
         // Inference for response prior (as an example, using MCMC)
-        inferY: function(thunk) {
+        Y: function(thunk) {
             Infer({method: 'MCMC', samples: 5000}, thunk)
         }
     },
@@ -176,9 +176,9 @@ AIG({
     x: 15, // LITTLE x: the experiment tested
     y: 20, // LITTLE y: the observed response,
     infer: {
-        // Since x and y are given, no inferX, inferY
-        inferM1: Enumerate,
-        inferM2: Enumerate
+        // Since x and y are given, no infer.X, infer.Y
+        M1: Enumerate,
+        M2: Enumerate
     }
     // No usePredictiveY, since y is given.
 });
