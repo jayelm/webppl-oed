@@ -18,6 +18,15 @@ var expectation = function(erp) {
             erp.support()))
 }
 
+// This does not assume numerical support values. It can accept any object as
+// long as it has a 'val' field from which the expectation will be computed.
+// This allows including additional information in the return values of a
+// computation
+var expectation2 = function(erp) {
+    sum(map(function(state) { return exp(score(erp, state)) * state.val },
+            erp.support()))
+}
+
 var variance = function(erp) {
     var mean = expectation(erp)
 
@@ -35,6 +44,12 @@ var Models = function(obj) {
     return map(function(key) {
         return Model(key, obj[key]);
     }, Object.keys(obj));
+};
+
+var getBestExpt = function(expts) {
+    return reduce(function(expt, currMax) {
+        return (expt.EIG > currMax.EIG) ? expt : currMax;
+    }, {x: null, EIG: -Infinity}, expts);
 };
 
 // TODO: using this on priors and posteriors Just Works when the supports
@@ -55,16 +70,16 @@ var KL = function(P, Q) {
         statesP));
 }
 
-// compute actual information gain
-var AIG = function(args) {
+var updatePosterior = function(args) {
     var M = args.M,
         x = args.x,
         y = args.y;
 
-    var infer = args.infer || {};
-    var inferM1 = infer.M1 || Enumerate;
-    var inferM2 = infer.M2 || Enumerate;
-    var mPrior = inferM1(function() {
+    var infer = args.infer || {},
+        inferM1 = infer.M1 || Enumerate,
+        inferM2 = infer.M2 || Enumerate;
+
+    var mPrior = args.mPrior || inferM1(function() {
         var m = M();
         return {name: m.name, func: m};
     });
@@ -76,9 +91,16 @@ var AIG = function(args) {
         return mData;
     });
 
-    return KL(mPosterior, mPrior);
-}
+    return {
+        mPosterior: mPosterior,
+        AIG: KL(mPosterior, mPrior)
+    };
+};
 
+// compute actual information gain
+var AIG = function(args) {
+    return updatePosterior(args).AIG;
+};
 
 // notes: doesn't seem to work with incrementalMH right now
 var EIG = function(args) {
@@ -90,11 +112,15 @@ var EIG = function(args) {
         inferM1 = infer.M1 || Enumerate,
         inferM2 = infer.M2 || Enumerate,
         mFuncs = args.mFuncs,
-        usePredictiveY = !!args.usePredictiveY;
+        usePredictiveY = !!args.usePredictiveY,
+        returnKL = !!args.returnKL;
 
-    var mPrior = inferM1(function() {
+    // Construct mPrior either 1) if it's provided in args, or 2) from the
+    // model sample function. Note that args.mPrior overrides args.M if both
+    // are present
+    var mPrior = args.mPrior || inferM1(function() {
         var m = M();
-        return {name: m.name, func: m}
+        return {name: m.name, func: m};
     });
 
     inferX(function() {
@@ -114,15 +140,15 @@ var EIG = function(args) {
                 return _m2;
             });
             var kl = KL(mPosterior, mPrior);
-            return kl;
+            return (returnKL) ? {y: y, val: kl} : kl;
         });
 
         // is there a way of getting confidence intervals around eig?
-        var EIG = expectation(KLDist);
+        var EIG = (returnKL) ? expectation2(KLDist) : expectation(KLDist);
         factor(EIG);
         // var VIG = variance(KLDist);
         // return {x: x, EIG: EIG, VIG: VIG}
-        return {x: x, EIG: EIG}
+        return (returnKL) ? {x: x, EIG: EIG, KLDist: KLDist} : {x: x, EIG: EIG}
     })
 }
 
