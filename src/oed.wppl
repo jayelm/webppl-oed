@@ -127,7 +127,7 @@ var EIG = function(args) {
         var x = X();
         // wrt the above distribution on responses, what is the posterior distribution on models?
         var KLDist = inferY(function() {
-            var y = Y();
+            var y = Y(x);
             if (args.usePredictiveY) {
                 var _m = sample(mPrior), mName = _m.name, mFunc = _m.func;
                 var scoreY = mFunc(x,y);
