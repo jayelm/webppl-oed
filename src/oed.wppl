@@ -65,6 +65,11 @@ var KL = function(P, Q) {
             var scoreP = score(P, state), scoreQ = score(Q, state);
             var probP = exp(scoreP);
             // P(i) * log[ P(i) / Q(i) ] =  P(i) * [log(P(i) - log(Q(i)))]
+            // Let \lim_{x \to 0} x \log(x) = 0.
+            // Otherwise, 0 * -Infinity = NaN.
+            if (probP === 0) {
+                return 0;
+            }
             return probP * (scoreP - scoreQ);
         },
         statesP));
