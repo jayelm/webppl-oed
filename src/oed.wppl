@@ -142,12 +142,12 @@ var EIG = function(args) {
             // back to real numbers - probably use this? Would need log1?
             // https://en.wikipedia.org/wiki/Log_probability#Addition_in_log_space
             if (args.usePredictiveY) {
-                var pyDist = inferM2(function() {
+                var predDist = inferM2(function() {
                     var _m = sample(mPrior), mName = _m.name, mFunc = _m.func;
                     var ll = mFunc(x,y);
                     return Math.exp(ll);
                 });
-                factor(Math.log(expectation(pyDist)));
+                factor(Math.log(expectation(predDist)));
             }
 
             var mPosterior = inferM2(function() {
