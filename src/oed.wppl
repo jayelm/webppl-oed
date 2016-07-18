@@ -18,6 +18,13 @@ var expectation = function(erp) {
             erp.support()))
 }
 
+var logsumexpectation = function(erp) {
+    return util.logsumexp(
+        map(function(state) { return score(erp, state) + state; },
+            erp.support())
+    );
+};
+
 // This does not assume numerical support values. It can accept any object as
 // long as it has a 'val' field from which the expectation will be computed.
 // This allows including additional information in the return values of a
@@ -133,21 +140,18 @@ var EIG = function(args) {
         // wrt the above distribution on responses, what is the posterior distribution on models?
         var KLDist = inferY(function() {
             var y = Y(x);
-            // FIXME: Do inferM2 JUST ONCE - if approximate inference on model
-            // posterior is necessary, it seems natural to use the same
+            // FIXME: Could do inferM2 JUST ONCE - if approximate inference on
+            // model posterior is necessary, it seems natural to use the same
             // approximate posterior to calculate 1) the predictive prior, 2)
-            // the KL-divergence. Additionally, you can likely cache model
-            // scoring (speeds things up)
-            // FIXME: Numerical stability and slowdown issues with converting
-            // back to real numbers - probably use this? Would need log1?
-            // https://en.wikipedia.org/wiki/Log_probability#Addition_in_log_space
+            // the KL-divergence. Additionally, you can reduce
+            // inference, model sampling and scoring overhead
             if (args.usePredictiveY) {
                 var predDist = inferM2(function() {
                     var _m = sample(mPrior), mName = _m.name, mFunc = _m.func;
                     var ll = mFunc(x,y);
-                    return Math.exp(ll);
+                    return ll;
                 });
-                factor(Math.log(expectation(predDist)));
+                factor(logsumexpectation(predDist));
             }
 
             var mPosterior = inferM2(function() {
