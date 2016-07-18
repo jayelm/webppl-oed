@@ -133,13 +133,23 @@ var EIG = function(args) {
         // wrt the above distribution on responses, what is the posterior distribution on models?
         var KLDist = inferY(function() {
             var y = Y(x);
+            // FIXME: Do inferM2 JUST ONCE - if approximate inference on model
+            // posterior is necessary, it seems natural to use the same
+            // approximate posterior to calculate 1) the predictive prior, 2)
+            // the KL-divergence. Additionally, you can likely cache model
+            // scoring (speeds things up)
+            // FIXME: Numerical stability and slowdown issues with converting
+            // back to real numbers - probably use this? Would need log1?
+            // https://en.wikipedia.org/wiki/Log_probability#Addition_in_log_space
             if (args.usePredictiveY) {
-                var _m = sample(mPrior), mName = _m.name, mFunc = _m.func;
-                var scoreY = mFunc(x,y);
-                factor(scoreY);
+                var pyDist = inferM2(function() {
+                    var _m = sample(mPrior), mName = _m.name, mFunc = _m.func;
+                    var ll = mFunc(x,y);
+                    return Math.exp(ll);
+                });
+                factor(Math.log(expectation(pyDist)));
             }
-            // TODO: For OED with discrete responses y, return mPosteriors
-            // in EIG to prevent recomputing during updatePosterior?
+
             var mPosterior = inferM2(function() {
                 var _m2 = sample(mPrior), m2Name = _m2.name, m2Func = _m2.func;
                 var ll = m2Func(x,y);
