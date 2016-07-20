@@ -1,0 +1,113 @@
+/**
+ * When caching, x and y experiments MUST have name attributes, to uniquely
+ * identify experiments without requiring JSON.stringify bottlenecks
+ * This script outputs a . each time a model is called, to demonstrate how the
+ * cached version does not call the models
+ */
+
+var coinWeights = [0.01, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 0.99];
+
+var round = function(x, n) {
+    var m = Math.pow(10,n)
+    return Math.round(x*m)/m;
+}
+
+var formatExperiment = function(x) {
+    map(function(xi) { return xi ? 'H' : 'T' }, x).join('')
+}
+
+// assumes a.length == b.length
+var arraysEqual = function(as,bs) {
+    return all(idF, map2(function(a, b) { return a === b }, as, bs))
+}
+
+var fairSingle = Model('fairSingle', cache(function(sequence) {
+    Enumerate(function() {
+        return flip()
+    })
+}));
+
+var biasSingle = Model('biasSingle', cache(function(sequence) {
+    Enumerate(function() {
+        var p = uniformDraw(coinWeights);
+        var sampled = repeat(sequence.length, function() { flip(p) })
+        condition(arraysEqual(sampled, sequence))
+        return flip(p);
+    })
+}));
+
+var markovSingle = Model('markovSingle', function(sequence) {
+    Enumerate(function(){
+        var transitionProb = uniformDraw(coinWeights);
+        var generateSequence = function(n, flipsSoFar) {
+            if (flipsSoFar.length == n) {
+                return flipsSoFar;
+            } else {
+                var lastFlip = last(flipsSoFar);
+                return generateSequence(n,
+                                        append(flipsSoFar,
+                                               flip(transitionProb) ? !lastFlip : lastFlip))
+            }
+        }
+
+        var firstCoin = flip();
+        var sampled = generateSequence(sequence.length, [firstCoin]);
+        condition(arraysEqual(sampled, sequence));
+
+        return flip(transitionProb) ? !last(sampled) : last(sampled);
+    })
+});
+
+var groupify = function(m) {
+    // maybe discriminative m should be of type ((x -> y) -> R) ?
+    // this obviates the need to cache the single distribution by hand..
+    var gm = function(x, y) {
+        process.stdout.write('.');
+        // console.log('calling model scoring function');
+        var yDist = m(x.sequence);
+        var p = Math.exp(yDist.score(true));
+        return Binomial({n: x.n, p: p}).score(y.n)
+    }
+    return Model(m.name.replace('Single', 'Group'), gm);
+}
+
+var fairGroup = groupify(fairSingle);
+var biasGroup = groupify(biasSingle);
+var markovGroup = groupify(markovSingle);
+
+var nullGroup = Model('nullGroup', function(x, y) {
+    process.stdout.write('.');
+    return RandomInteger({n: 20 + 1}).score(y);
+});
+
+var mSample = function() {
+    return uniformDraw([fairGroup, biasGroup, markovGroup, nullGroup]);
+};
+var xSample = function() {
+    var sequence = repeat(4, flip);
+    var name = formatExperiment(sequence);
+    return {n: 20, sequence: sequence, name: name};
+};
+var ySample = function() {
+    var n = randomInteger(20 + 1);
+    return {n: n, name: n.toString()};
+};
+
+console.log('Computing cache (each . is a model call)');
+var cache = cacheScores({
+    M: mSample,
+    X: xSample,
+    Y: ySample
+});
+console.log('');
+
+console.log('Computing EIG with cache');
+var EIGdist = EIG({
+    M: mSample,
+    X: xSample,
+    Y: ySample,
+    cache: cache
+});
+
+console.log(EIGdist);
+getBestExpt(EIGdist.support());

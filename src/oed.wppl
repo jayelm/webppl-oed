@@ -124,6 +124,18 @@ var EIG = function(args) {
         usePredictiveY = !!args.usePredictiveY,
         returnKL = !!args.returnKL;
 
+    var cache = args.cache || {},
+        doCaching = !_.isEmpty(cache);
+
+    // Retrieve from cache if possible, otherwise fall back to model function.
+    var retrieveCache = function(mName, mFunc, x, y) {
+        return (
+            cache[mName] && cache[mName][x.name] && cache[mName][x.name][y.name]
+        ) || (
+            mFunc(x, y)
+        );
+    };
+
     // Construct mPrior either 1) if it's provided in args, or 2) from the
     // model sample function. Note that args.mPrior overrides args.M if both
     // are present
@@ -140,7 +152,9 @@ var EIG = function(args) {
 
             var mPosterior = inferM2(function() {
                 var _m = sample(mPrior), mName = _m.name, mFunc = _m.func;
-                var ll = mFunc(x,y);
+                var ll = (doCaching) ?
+                    retrieveCache(mName, mFunc, x, y) :
+                    mFunc(x, y);
                 factor(ll);
                 return {m: _m, ll: ll};
             });
@@ -160,5 +174,62 @@ var EIG = function(args) {
         return (returnKL) ? {x: x, EIG: EIG, KLDist: KLDist} : {x: x, EIG: EIG}
     })
 }
+
+// Return a JSON object of the form
+// {
+//  modelName: {
+//   x1: {
+//    y1: score1,
+//    y2: score2,
+//    ...
+//   },
+//   ...
+//  },
+//  ...
+// }
+// where objects are stringifed as necessary, to enable hashing.
+// This allows caching model scoring. Works only with Enumerate, otherwise the
+// caching won't be very useful
+var cacheScores = function(args) {
+    var M = args.M, X = args.X, Y = args.Y;
+
+    var mPrior = args.mPrior || Enumerate(function() {
+        var m = M();
+        return {name: m.name, func: m};
+    });
+
+    var ms = mPrior.support();
+    var mNames = _.pluck(ms, 'name');
+
+    // TODO: Have an option to specify experiment/response IDs, like model
+    // names, which can result in more efficient encoding
+    var xs = Enumerate(function() {
+        var x = X();
+        return {name: x.name, x: x};
+    }).support();
+    var xNames = _.pluck(xs, 'name');
+
+    // Since ys depend on x, this needs to map xs to arrays of ys
+    var ys = _.object(xNames, pam(xs, function(x) {
+        return Enumerate(function() {
+            var y = Y(x.x);
+            return {name: y.name, y: y};
+        }).support();
+    }));
+    var yNames = mapObject(function(x, ys) {
+        return _.pluck(ys, 'name');
+    }, ys);
+
+    return _.object(mNames, pam(ms, function(m) {
+        var mFunc = m.func;
+        return _.object(xNames, pam(xs, function(x) {
+            var xys = ys[x.name];
+            var xyns = yNames[x.name];
+            return _.object(xyns, pam(xys, function(y) {
+                return mFunc(x.x, y.y);
+            }));
+        }));
+    }));
+};
 
 var OED = EIG;
