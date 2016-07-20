@@ -13,26 +13,20 @@ var exp = function(x) {
     return Math.exp(x);
 }
 
-var expectation = function(erp) {
-    sum(map(function(state) { return exp(score(erp, state)) * state },
-            erp.support()))
-}
-
-var logsumexpectation = function(erp) {
-    return util.logsumexp(
-        map(function(state) { return score(erp, state) + state; },
-            erp.support())
-    );
+// If "prop" is specified, then the expectation will be computed with that
+// property of each state. Otherwise, the state itself will be used, assuming
+// that the distribution states are numeric.
+var expectation = function(erp, prop) {
+    return sum(map(function(state) {
+        return exp(score(erp, state)) * ((!!prop) ? state[prop] : state);
+    }, erp.support()));
 };
 
-// This does not assume numerical support values. It can accept any object as
-// long as it has a 'val' field from which the expectation will be computed.
-// This allows including additional information in the return values of a
-// computation
-var expectation2 = function(erp) {
-    sum(map(function(state) { return exp(score(erp, state)) * state.val },
-            erp.support()))
-}
+var logsumexpectation = function(erp, prop) {
+    return util.logsumexp(map(function(state) {
+        return score(erp, state) + ((!!prop) ? state[prop] : state);
+    }, erp.support()));
+};
 
 var variance = function(erp) {
     var mean = expectation(erp)
@@ -62,14 +56,17 @@ var getBestExpt = function(expts) {
 // TODO: using this on priors and posteriors Just Works when the supports
 // are {name: ..., func: ...} objects, which is a little surprising
 // figure out why this works
-var KL = function(P, Q) {
+// If pProp is specified, then Q is scored with that property of P support
+// elements (necessary if model posterior contains extra information)
+var KL = function(P, Q, pProp) {
     var statesP = P.support();
     var statesQ = Q.support();
 
     // TODO: assert that states1 = states2
     return sum(map(
         function(state) {
-            var scoreP = score(P, state), scoreQ = score(Q, state);
+            var scoreP = score(P, state);
+            var scoreQ = score(Q, ((!!pProp) ? state[pProp] : state));
             var probP = exp(scoreP);
             // P(i) * log[ P(i) / Q(i) ] =  P(i) * [log(P(i) - log(Q(i)))]
             // Let \lim_{x \to 0} x \log(x) = 0.
@@ -140,32 +137,23 @@ var EIG = function(args) {
         // wrt the above distribution on responses, what is the posterior distribution on models?
         var KLDist = inferY(function() {
             var y = Y(x);
-            // FIXME: Could do inferM2 JUST ONCE - if approximate inference on
-            // model posterior is necessary, it seems natural to use the same
-            // approximate posterior to calculate 1) the predictive prior, 2)
-            // the KL-divergence. Additionally, you can reduce
-            // inference, model sampling and scoring overhead
-            if (args.usePredictiveY) {
-                var predDist = inferM2(function() {
-                    var _m = sample(mPrior), mName = _m.name, mFunc = _m.func;
-                    var ll = mFunc(x,y);
-                    return ll;
-                });
-                factor(logsumexpectation(predDist));
-            }
 
             var mPosterior = inferM2(function() {
-                var _m2 = sample(mPrior), m2Name = _m2.name, m2Func = _m2.func;
-                var ll = m2Func(x,y);
+                var _m = sample(mPrior), mName = _m.name, mFunc = _m.func;
+                var ll = mFunc(x,y);
                 factor(ll);
-                return _m2;
+                return {m: _m, ll: ll};
             });
-            var kl = KL(mPosterior, mPrior);
-            return {y: y, val: kl};
+
+            var kl = KL(mPosterior, mPrior, 'm');
+            if (args.usePredictiveY) {
+                factor(logsumexpectation(mPosterior, 'll'));
+            }
+            return {y: y, kl: kl};
         });
 
         // is there a way of getting confidence intervals around eig?
-        var EIG = expectation2(KLDist);
+        var EIG = expectation(KLDist, 'kl');
         factor(EIG);
         // var VIG = variance(KLDist);
         // return {x: x, EIG: EIG, VIG: VIG}
